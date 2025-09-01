@@ -113,8 +113,63 @@ CREATE TABLE invoice_items (
     FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
 );
 
+
 -- Add index for better performance
 CREATE INDEX idx_invoice_items_invoice_id ON invoice_items(invoice_id);
+
+
+-- Add company_settings table for invoice header information
+CREATE TABLE company_settings (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    company_name VARCHAR(200) NOT NULL,
+    email VARCHAR(100),
+    mobile_number_1 VARCHAR(20),
+    mobile_number_2 VARCHAR(20),
+    address TEXT,
+    city VARCHAR(100),
+    postal_code VARCHAR(20),
+    bank_name VARCHAR(100),
+    bank_branch VARCHAR(100),
+    bank_account_number VARCHAR(50),
+    bank_account_name VARCHAR(100),
+    tax_number VARCHAR(50),
+    website VARCHAR(100),
+    logo_path VARCHAR(255) DEFAULT 'assets/uploads/logo.png',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Insert default company settings (modify as needed)
+INSERT INTO company_settings (
+    company_name, 
+    email, 
+    mobile_number_1, 
+    mobile_number_2, 
+    address, 
+    city, 
+    postal_code,
+    bank_name,
+    bank_branch,
+    bank_account_number,
+    bank_account_name,
+    tax_number,
+    website
+) VALUES (
+    'Your Company Name',
+    'info@yourcompany.com',
+    '+94 77 123 4567',
+    '+94 11 234 5678',
+    '123 Business Street, Business District',
+    'Colombo',
+    '00100',
+    'Commercial Bank of Ceylon',
+    'Colombo 03',
+    '1234567890',
+    'Your Company Name',
+    'TIN123456789',
+    'www.yourcompany.com'
+);
+
 
 -- Insert default admin user (password: admin123 - should be changed)
 INSERT INTO users (username, email, password, role, full_name) VALUES 
