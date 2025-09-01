@@ -212,57 +212,48 @@ include '../../includes/header.php';
                                     <?php echo htmlspecialchars($client['contact_person']); ?>
                                 </p>
                             </div>
-                            <div class="flex items-center space-x-2 ml-3">
-                                <!-- Action Dropdown -->
-                                <div class="relative">
-                                    <button 
-                                        onclick="toggleDropdown('dropdown-<?php echo $client['id']; ?>')"
-                                        class="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                                        aria-label="More options"
-                                    >
-                                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                            <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"></path>
-                                        </svg>
-                                    </button>
-                                    <div 
-                                        id="dropdown-<?php echo $client['id']; ?>" 
-                                        class="hidden absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10"
-                                    >
-                                        <div class="py-1">
-                                            <a href="<?php echo Helper::baseUrl('modules/clients/view.php?id=' . Helper::encryptId($client['id'])); ?>" 
-                                               class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                                </svg>
-                                                View Details
-                                            </a>
-                                            <a href="<?php echo Helper::baseUrl('modules/clients/edit.php?id=' . Helper::encryptId($client['id'])); ?>" 
-                                               class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                                </svg>
-                                                Edit Client
-                                            </a>
-                                            <a href="<?php echo Helper::baseUrl('modules/projects/add.php?client_id=' . Helper::encryptId($client['id'])); ?>" 
-                                               class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                                                </svg>
-                                                New Project
-                                            </a>
-                                            <div class="border-t border-gray-100"></div>
-                                            <button 
-                                                onclick="confirmDelete(<?php echo $client['id']; ?>, '<?php echo addslashes($client['company_name']); ?>')"
-                                                class="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50">
-                                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                                </svg>
-                                                Delete Client
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
+                            <!-- Action Buttons -->
+                            <div class="flex items-center gap-2 ml-3">
+                                <!-- View Button -->
+                                <a href="<?php echo Helper::baseUrl('modules/clients/view.php?id=' . Helper::encryptId($client['id'])); ?>" 
+                                   class="inline-flex items-center justify-center w-8 h-8 sm:w-auto sm:h-auto sm:px-3 sm:py-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors group"
+                                   title="View Details">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                    </svg>
+                                    <span class="hidden sm:inline ml-1 text-xs font-medium">View</span>
+                                </a>
+                                
+                                <!-- Edit Button -->
+                                <a href="<?php echo Helper::baseUrl('modules/clients/edit.php?id=' . Helper::encryptId($client['id'])); ?>" 
+                                   class="inline-flex items-center justify-center w-8 h-8 sm:w-auto sm:h-auto sm:px-3 sm:py-2 text-gray-600 hover:text-gray-700 hover:bg-gray-50 rounded-lg transition-colors group"
+                                   title="Edit Client">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                    </svg>
+                                    <span class="hidden sm:inline ml-1 text-xs font-medium">Edit</span>
+                                </a>
+                                
+                                <!-- New Project Button -->
+                                <a href="<?php echo Helper::baseUrl('modules/projects/add.php?client_id=' . Helper::encryptId($client['id'])); ?>" 
+                                   class="inline-flex items-center justify-center w-8 h-8 sm:w-auto sm:h-auto sm:px-3 sm:py-2 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors group"
+                                   title="New Project">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                    </svg>
+                                    <span class="hidden sm:inline ml-1 text-xs font-medium">Project</span>
+                                </a>
+                                
+                                <!-- Delete Button -->
+                                <button onclick="confirmDelete(<?php echo $client['id']; ?>, '<?php echo addslashes($client['company_name']); ?>')"
+                                        class="inline-flex items-center justify-center w-8 h-8 sm:w-auto sm:h-auto sm:px-3 sm:py-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors group"
+                                        title="Delete Client">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                    <span class="hidden sm:inline ml-1 text-xs font-medium">Delete</span>
+                                </button>
                             </div>
                         </div>
 
@@ -290,13 +281,6 @@ include '../../includes/header.php';
                                     <span class="font-medium text-gray-900"><?php echo number_format($client['project_count']); ?></span>
                                     <span class="text-gray-500">project<?php echo $client['project_count'] !== 1 ? 's' : ''; ?></span>
                                 </div>
-                                <div class="text-sm">
-                                    <span class="font-medium text-green-600"><?php echo Helper::formatCurrency($client['total_revenue']); ?></span>
-                                    <span class="text-gray-500">revenue</span>
-                                </div>
-                            </div>
-                            <div class="text-xs text-gray-500">
-                                Added <?php echo Helper::formatDate($client['created_at'], 'M j, Y'); ?>
                             </div>
                         </div>
                     </div>
@@ -369,7 +353,7 @@ include '../../includes/header.php';
 </div>
 
 <style>
-/* Mobile optimizations */
+/* Mobile optimizations for action buttons */
 @media (max-width: 640px) {
     .grid.grid-cols-1.sm\:grid-cols-2 {
         grid-template-columns: repeat(1, minmax(0, 1fr));
@@ -383,51 +367,50 @@ include '../../includes/header.php';
         margin-left: 0;
         margin-top: 0.5rem;
     }
+    
+    /* Ensure action buttons are properly sized on mobile */
+    .action-buttons {
+        min-width: 32px;
+        min-height: 32px;
+    }
+    
+    /* Stack buttons vertically on very small screens */
+    @media (max-width: 480px) {
+        .flex.items-center.gap-2 {
+            flex-wrap: wrap;
+        }
+    }
 }
 
-/* Dropdown animations */
-.dropdown-enter {
-    opacity: 0;
-    transform: translateY(-10px) scale(0.95);
+/* Action button hover effects */
+.group:hover svg {
+    transform: scale(1.1);
+    transition: transform 0.2s ease;
 }
 
-.dropdown-enter-active {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    transition: all 0.2s ease-out;
+/* Button focus states for accessibility */
+button:focus,
+a:focus {
+    outline: 2px solid #3B82F6;
+    outline-offset: 2px;
 }
 
 /* Card hover effects */
 .bg-white.rounded-xl.border:hover {
     transform: translateY(-1px);
+    transition: transform 0.2s ease;
+}
+
+/* Ensure proper touch targets on mobile */
+@media (max-width: 768px) {
+    .w-8.h-8 {
+        min-width: 44px;
+        min-height: 44px;
+    }
 }
 </style>
 
 <script>
-// Dropdown functionality
-function toggleDropdown(dropdownId) {
-    const dropdown = document.getElementById(dropdownId);
-    const allDropdowns = document.querySelectorAll('[id^="dropdown-"]');
-    
-    // Close all other dropdowns
-    allDropdowns.forEach(d => {
-        if (d.id !== dropdownId) {
-            d.classList.add('hidden');
-        }
-    });
-    
-    // Toggle current dropdown
-    dropdown.classList.toggle('hidden');
-}
-
-// Close dropdowns when clicking outside
-document.addEventListener('click', function(e) {
-    if (!e.target.closest('[onclick^="toggleDropdown"]')) {
-        const allDropdowns = document.querySelectorAll('[id^="dropdown-"]');
-        allDropdowns.forEach(d => d.classList.add('hidden'));
-    }
-});
-
 // Delete confirmation
 let clientToDelete = null;
 

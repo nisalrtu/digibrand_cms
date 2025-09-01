@@ -109,24 +109,6 @@ try {
     $invoicesStmt->execute($params);
     $invoices = $invoicesStmt->fetchAll(PDO::FETCH_ASSOC);
     
-    // Get summary statistics
-    $statsQuery = "
-        SELECT 
-            COUNT(*) as total_invoices,
-            SUM(CASE WHEN status = 'draft' THEN 1 ELSE 0 END) as draft_count,
-            SUM(CASE WHEN status = 'sent' THEN 1 ELSE 0 END) as sent_count,
-            SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END) as paid_count,
-            SUM(CASE WHEN status = 'partially_paid' THEN 1 ELSE 0 END) as partial_count,
-            SUM(CASE WHEN status = 'overdue' THEN 1 ELSE 0 END) as overdue_count,
-            SUM(total_amount) as total_amount,
-            SUM(paid_amount) as total_paid,
-            SUM(balance_amount) as total_outstanding
-        FROM invoices
-    ";
-    $statsStmt = $db->prepare($statsQuery);
-    $statsStmt->execute();
-    $stats = $statsStmt->fetch(PDO::FETCH_ASSOC);
-    
     // Get clients for filter dropdown
     $clientsQuery = "
         SELECT id, company_name 
@@ -141,7 +123,6 @@ try {
 } catch (Exception $e) {
     Helper::setMessage('Error loading invoices: ' . $e->getMessage(), 'error');
     $invoices = [];
-    $stats = [];
     $clients = [];
     $totalPages = 0;
     $totalInvoices = 0;
@@ -165,104 +146,6 @@ include '../../includes/header.php';
                 </svg>
                 Create Invoice
             </a>
-        </div>
-    </div>
-</div>
-
-<!-- Summary Statistics -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-    <!-- Total Invoices -->
-    <div class="bg-white rounded-xl border border-gray-200 p-6">
-        <div class="flex items-center">
-            <div class="flex-shrink-0">
-                <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                    </svg>
-                </div>
-            </div>
-            <div class="ml-4">
-                <p class="text-sm font-medium text-gray-600">Total Invoices</p>
-                <p class="text-2xl font-bold text-gray-900"><?php echo number_format($stats['total_invoices'] ?? 0); ?></p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Total Amount -->
-    <div class="bg-white rounded-xl border border-gray-200 p-6">
-        <div class="flex items-center">
-            <div class="flex-shrink-0">
-                <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                    <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
-                    </svg>
-                </div>
-            </div>
-            <div class="ml-4">
-                <p class="text-sm font-medium text-gray-600">Total Amount</p>
-                <p class="text-2xl font-bold text-gray-900"><?php echo Helper::formatCurrency($stats['total_amount'] ?? 0); ?></p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Paid Amount -->
-    <div class="bg-white rounded-xl border border-gray-200 p-6">
-        <div class="flex items-center">
-            <div class="flex-shrink-0">
-                <div class="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
-                    <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                </div>
-            </div>
-            <div class="ml-4">
-                <p class="text-sm font-medium text-gray-600">Paid Amount</p>
-                <p class="text-2xl font-bold text-gray-900"><?php echo Helper::formatCurrency($stats['total_paid'] ?? 0); ?></p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Outstanding -->
-    <div class="bg-white rounded-xl border border-gray-200 p-6">
-        <div class="flex items-center">
-            <div class="flex-shrink-0">
-                <div class="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
-                    <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                </div>
-            </div>
-            <div class="ml-4">
-                <p class="text-sm font-medium text-gray-600">Outstanding</p>
-                <p class="text-2xl font-bold text-gray-900"><?php echo Helper::formatCurrency($stats['total_outstanding'] ?? 0); ?></p>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Status Overview -->
-<div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-    <h3 class="text-lg font-semibold text-gray-900 mb-4">Invoice Status Overview</h3>
-    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <div class="text-center">
-            <div class="text-2xl font-bold text-gray-500"><?php echo $stats['draft_count'] ?? 0; ?></div>
-            <div class="text-sm text-gray-600">Draft</div>
-        </div>
-        <div class="text-center">
-            <div class="text-2xl font-bold text-blue-600"><?php echo $stats['sent_count'] ?? 0; ?></div>
-            <div class="text-sm text-gray-600">Sent</div>
-        </div>
-        <div class="text-center">
-            <div class="text-2xl font-bold text-yellow-600"><?php echo $stats['partial_count'] ?? 0; ?></div>
-            <div class="text-sm text-gray-600">Partial</div>
-        </div>
-        <div class="text-center">
-            <div class="text-2xl font-bold text-green-600"><?php echo $stats['paid_count'] ?? 0; ?></div>
-            <div class="text-sm text-gray-600">Paid</div>
-        </div>
-        <div class="text-center">
-            <div class="text-2xl font-bold text-red-600"><?php echo $stats['overdue_count'] ?? 0; ?></div>
-            <div class="text-sm text-gray-600">Overdue</div>
         </div>
     </div>
 </div>
@@ -874,41 +757,6 @@ function filterByStatus(status) {
     const statusSelect = document.getElementById('status');
     statusSelect.value = status;
     statusSelect.form.submit();
-}
-
-// Add quick filter buttons dynamically
-if (window.innerWidth >= 768) {
-    const statusOverview = document.querySelector('.grid.grid-cols-2.md\\:grid-cols-5');
-    if (statusOverview) {
-        statusOverview.addEventListener('click', function(e) {
-            const statusDiv = e.target.closest('[class*="text-center"]');
-            if (statusDiv) {
-                const statusText = statusDiv.querySelector('div:last-child').textContent.toLowerCase();
-                const statusMap = {
-                    'draft': 'draft',
-                    'sent': 'sent',
-                    'partial': 'partially_paid',
-                    'paid': 'paid',
-                    'overdue': 'overdue'
-                };
-                
-                if (statusMap[statusText]) {
-                    filterByStatus(statusMap[statusText]);
-                }
-            }
-        });
-        
-        // Add pointer cursor to status cards
-        statusOverview.querySelectorAll('[class*="text-center"]').forEach(card => {
-            card.style.cursor = 'pointer';
-            card.addEventListener('mouseenter', function() {
-                this.style.backgroundColor = '#f9fafb';
-            });
-            card.addEventListener('mouseleave', function() {
-                this.style.backgroundColor = '';
-            });
-        });
-    }
 }
 
 // Auto-refresh for real-time updates (optional)

@@ -475,42 +475,7 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-// Auto-save draft (optional feature)
-let autoSaveTimer;
-function autoSave() {
-    const formData = new FormData(document.querySelector('form'));
-    const data = Object.fromEntries(formData.entries());
-    localStorage.setItem('client_form_draft', JSON.stringify(data));
-}
 
-// Load draft on page load
-document.addEventListener('DOMContentLoaded', function() {
-    const draft = localStorage.getItem('client_form_draft');
-    if (draft && !<?php echo !empty($formData['company_name']) ? 'true' : 'false'; ?>) {
-        const data = JSON.parse(draft);
-        Object.keys(data).forEach(key => {
-            const field = document.querySelector(`[name="${key}"]`);
-            if (field && key !== 'csrf_token') {
-                field.value = data[key];
-                // Trigger character counters
-                field.dispatchEvent(new Event('input'));
-            }
-        });
-    }
-});
-
-// Clear draft on successful submission
-<?php if (empty($errors) && $_SERVER['REQUEST_METHOD'] === 'POST'): ?>
-localStorage.removeItem('client_form_draft');
-<?php endif; ?>
-
-// Auto-save on input (debounced)
-document.querySelectorAll('input, textarea').forEach(field => {
-    field.addEventListener('input', function() {
-        clearTimeout(autoSaveTimer);
-        autoSaveTimer = setTimeout(autoSave, 2000);
-    });
-});
 </script>
 
 <?php include '../../includes/footer.php'; ?>
