@@ -170,6 +170,47 @@ INSERT INTO company_settings (
     'www.yourcompany.com'
 );
 
+CREATE TABLE expenses (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    expense_name VARCHAR(200) NOT NULL,
+    description TEXT,
+    amount DECIMAL(10, 2) NOT NULL,
+    expense_date DATE NOT NULL,
+    category ENUM('software', 'marketing', 'office', 'utilities', 'travel', 'equipment', 'subscription', 'other') NOT NULL DEFAULT 'other',
+    
+    -- Recurring expense settings
+    is_recurring BOOLEAN DEFAULT FALSE,
+    recurring_type ENUM('monthly', 'yearly', 'quarterly', 'weekly') NULL,
+    next_due_date DATE NULL,
+    
+    -- Payment tracking
+    payment_status ENUM('paid', 'pending', 'overdue') NOT NULL DEFAULT 'pending',
+    payment_date DATE NULL,
+    payment_method ENUM('cash', 'bank_transfer', 'check', 'card', 'online', 'other') NULL,
+    payment_reference VARCHAR(100),
+    
+    -- Vendor/Supplier info (optional)
+    vendor_name VARCHAR(200),
+    vendor_contact VARCHAR(100) NULL,
+    
+    -- Additional fields
+    receipt_path VARCHAR(255), -- For storing receipt/invoice files
+    notes TEXT,
+    
+    -- System fields
+    created_by INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (created_by) REFERENCES users(id)
+);
+
+-- Add indexes for better performance
+CREATE INDEX idx_expenses_date ON expenses(expense_date);
+CREATE INDEX idx_expenses_category ON expenses(category);
+CREATE INDEX idx_expenses_payment_status ON expenses(payment_status);
+CREATE INDEX idx_expenses_recurring ON expenses(is_recurring, next_due_date);
+CREATE INDEX idx_expenses_vendor ON expenses(vendor_name);
 
 -- Insert default admin user (password: admin123 - should be changed)
 INSERT INTO users (username, email, password, role, full_name) VALUES 
