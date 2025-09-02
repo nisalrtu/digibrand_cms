@@ -83,44 +83,18 @@ try {
     $expenseStmt->execute($params);
     $expenses = $expenseStmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Get upcoming recurring payments (next 30 days)
+    // Get upcoming recurring payments (next 30 days) - including paid recurring expenses with future due dates
     $upcomingQuery = "
         SELECT * FROM expenses 
         WHERE is_recurring = 1 
-        AND payment_status != 'paid'
         AND next_due_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+        AND next_due_date IS NOT NULL
         ORDER BY next_due_date ASC
         LIMIT 10
     ";
     $upcomingStmt = $db->prepare($upcomingQuery);
     $upcomingStmt->execute();
     $upcomingPayments = $upcomingStmt->fetchAll(PDO::FETCH_ASSOC);
-
-    // Get overdue payments
-    $overdueQuery = "
-        SELECT * FROM expenses 
-        WHERE is_recurring = 1 
-        AND payment_status != 'paid'
-        AND next_due_date < CURDATE()
-        ORDER BY next_due_date ASC
-        LIMIT 5
-    ";
-    $overdueStmt = $db->prepare($overdueQuery);
-    $overdueStmt->execute();
-    $overduePayments = $overdueStmt->fetchAll(PDO::FETCH_ASSOC);
-
-    // Get payments due this week
-    $thisWeekQuery = "
-        SELECT * FROM expenses 
-        WHERE is_recurring = 1 
-        AND payment_status != 'paid'
-        AND next_due_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
-        ORDER BY next_due_date ASC
-        LIMIT 5
-    ";
-    $thisWeekStmt = $db->prepare($thisWeekQuery);
-    $thisWeekStmt->execute();
-    $thisWeekPayments = $thisWeekStmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Get current month expenses total
     $currentMonth = date('Y-m');
@@ -138,80 +112,12 @@ try {
     Helper::setMessage('Error loading expenses: ' . $e->getMessage(), 'error');
     $expenses = [];
     $upcomingPayments = [];
-    $overduePayments = [];
-    $thisWeekPayments = [];
     $monthlyTotal = 0;
     $totalPages = 1;
 }
 
 include '../../includes/header.php';
 ?>
-
-<!-- Critical Notifications -->
-<?php if (!empty($overduePayments)): ?>
-<div class="bg-red-50 border-2 border-red-200 rounded-lg p-4 mb-4 shadow-lg">
-    <div class="flex items-start">
-        <div class="w-6 h-6 text-red-600 mt-0.5 animate-pulse">
-            <svg fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-            </svg>
-        </div>
-        <div class="ml-3 flex-1">
-            <h3 class="text-sm font-bold text-red-800 uppercase tracking-wide">🚨 OVERDUE PAYMENTS</h3>
-            <p class="text-sm text-red-700 mt-1 font-medium">
-                <?php echo count($overduePayments); ?> recurring expenses are overdue and require immediate attention!
-            </p>
-            <div class="mt-3 space-y-2">
-                <?php foreach ($overduePayments as $payment): ?>
-                    <div class="flex items-center justify-between text-sm bg-red-100 p-2 rounded">
-                        <span class="font-bold text-red-900"><?php echo htmlspecialchars($payment['expense_name']); ?></span>
-                        <div class="flex items-center space-x-3">
-                            <span class="text-red-800 font-bold">Rs. <?php echo number_format($payment['amount'], 2); ?></span>
-                            <span class="text-red-600 font-medium bg-red-200 px-2 py-1 rounded text-xs">
-                                <?php 
-                                $overdueDays = (new DateTime())->diff(new DateTime($payment['next_due_date']))->days;
-                                echo $overdueDays . ' days overdue';
-                                ?>
-                            </span>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-        </div>
-    </div>
-</div>
-<?php endif; ?>
-
-<?php if (!empty($thisWeekPayments)): ?>
-<div class="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-4 mb-4 shadow-md">
-    <div class="flex items-start">
-        <div class="w-6 h-6 text-yellow-600 mt-0.5">
-            <svg fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-            </svg>
-        </div>
-        <div class="ml-3 flex-1">
-            <h3 class="text-sm font-bold text-yellow-800 uppercase tracking-wide">⚠️ DUE THIS WEEK</h3>
-            <p class="text-sm text-yellow-700 mt-1 font-medium">
-                <?php echo count($thisWeekPayments); ?> recurring expenses are due within the next 7 days.
-            </p>
-            <div class="mt-3 space-y-2">
-                <?php foreach ($thisWeekPayments as $payment): ?>
-                    <div class="flex items-center justify-between text-sm bg-yellow-100 p-2 rounded">
-                        <span class="font-bold text-yellow-900"><?php echo htmlspecialchars($payment['expense_name']); ?></span>
-                        <div class="flex items-center space-x-3">
-                            <span class="text-yellow-800 font-bold">Rs. <?php echo number_format($payment['amount'], 2); ?></span>
-                            <span class="text-yellow-600 font-medium bg-yellow-200 px-2 py-1 rounded text-xs">
-                                Due <?php echo date('M j', strtotime($payment['next_due_date'])); ?>
-                            </span>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-        </div>
-    </div>
-</div>
-<?php endif; ?>
 
 <!-- Page Header -->
 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
@@ -246,35 +152,42 @@ include '../../includes/header.php';
 </div>
 
 
-<!-- Upcoming Payments Alert -->
-<?php if (!empty($upcomingPayments) && empty($overduePayments) && empty($thisWeekPayments)): ?>
-<div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-    <div class="flex items-start">
-        <div class="w-5 h-5 text-blue-600 mt-0.5">
-            <svg fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"></path>
-            </svg>
-        </div>
-        <div class="ml-3 flex-1">
-            <h3 class="text-sm font-medium text-blue-800">📅 Upcoming Payments</h3>
-            <p class="text-sm text-blue-700 mt-1">
-                You have <?php echo count($upcomingPayments); ?> recurring expenses due in the next 30 days.
-            </p>
-            <div class="mt-3 space-y-2">
-                <?php foreach (array_slice($upcomingPayments, 0, 3) as $payment): ?>
-                    <div class="flex items-center justify-between text-sm">
-                        <span class="font-medium text-blue-800"><?php echo htmlspecialchars($payment['expense_name']); ?></span>
-                        <div class="flex items-center space-x-3">
-                            <span class="text-blue-700">Rs. <?php echo number_format($payment['amount'], 2); ?></span>
-                            <span class="text-blue-600"><?php echo date('M j', strtotime($payment['next_due_date'])); ?></span>
-                        </div>
-                    </div>
-                <?php endforeach; ?>
-                <?php if (count($upcomingPayments) > 3): ?>
-                    <p class="text-xs text-blue-600">+<?php echo count($upcomingPayments) - 3; ?> more...</p>
-                <?php endif; ?>
+<!-- Minimal Upcoming Payments Notification -->
+<?php if (!empty($upcomingPayments)): ?>
+<div class="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
+    <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-medium text-orange-800">
+            Upcoming Payments (<?php echo count($upcomingPayments); ?>)
+        </h3>
+        <span class="text-xs text-orange-600">Next 30 days</span>
+    </div>
+    
+    <div class="space-y-2">
+        <?php foreach ($upcomingPayments as $payment): ?>
+            <?php 
+            $dueDate = new DateTime($payment['next_due_date']);
+            $today = new DateTime();
+            $daysUntilDue = $today->diff($dueDate)->days;
+            $isOverdue = $dueDate < $today;
+            $isDueSoon = $daysUntilDue <= 7;
+            ?>
+            <div class="flex items-center justify-between p-2 bg-white rounded border border-orange-100">
+                <div class="flex-1">
+                    <span class="text-sm font-medium text-gray-900">
+                        <?php echo htmlspecialchars($payment['expense_name']); ?>
+                    </span>
+                </div>
+                
+                <div class="flex items-center space-x-4 text-sm">
+                    <span class="<?php echo $payment['payment_status'] === 'paid' ? 'text-green-600' : ($isOverdue ? 'text-red-600' : ($isDueSoon ? 'text-orange-600' : 'text-gray-600')); ?>">
+                        <?php echo date('M j', strtotime($payment['next_due_date'])); ?>
+                    </span>
+                    <span class="font-medium text-gray-900 min-w-[80px] text-right">
+                        Rs. <?php echo number_format($payment['amount'], 0); ?>
+                    </span>
+                </div>
             </div>
-        </div>
+        <?php endforeach; ?>
     </div>
 </div>
 <?php endif; ?>
