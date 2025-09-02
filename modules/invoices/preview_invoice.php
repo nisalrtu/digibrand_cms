@@ -67,6 +67,22 @@ try {
         $invoiceItems = [];
     }
     
+    // Get related payments
+    $relatedPayments = [];
+    try {
+        $paymentsQuery = "
+            SELECT * FROM payments 
+            WHERE invoice_id = :invoice_id 
+            ORDER BY payment_date DESC, created_at DESC
+        ";
+        $paymentsStmt = $db->prepare($paymentsQuery);
+        $paymentsStmt->bindParam(':invoice_id', $invoiceId);
+        $paymentsStmt->execute();
+        $relatedPayments = $paymentsStmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        $relatedPayments = [];
+    }
+    
 } catch (Exception $e) {
     Helper::setMessage('Error loading invoice: ' . $e->getMessage(), 'error');
     Helper::redirect('modules/invoices/');
@@ -279,6 +295,21 @@ $total = $subtotal + $taxAmount - $discountAmount;
                                     <span class="text-base font-bold text-gray-900">LKR <?php echo number_format($total, 2); ?></span>
                                 </div>
                             </div>
+
+                            <?php if (!empty($relatedPayments)): ?>
+                                <div class="border-t border-gray-200 pt-1 mt-2">
+                                    <div class="flex justify-between py-1">
+                                        <span class="text-sm font-semibold text-green-700">Paid Amount:</span>
+                                        <span class="text-sm font-bold text-green-700">LKR <?php echo number_format($invoice['paid_amount'] ?? 0, 2); ?></span>
+                                    </div>
+                                    <?php if (($invoice['balance_amount'] ?? 0) > 0): ?>
+                                        <div class="flex justify-between py-1">
+                                            <span class="text-base font-semibold text-red-700">Balance Due:</span>
+                                            <span class="text-base font-bold text-red-700">LKR <?php echo number_format($invoice['balance_amount'], 2); ?></span>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -300,6 +331,40 @@ $total = $subtotal + $taxAmount - $discountAmount;
                         <p><span class="text-gray-600">Name:</span> <span class="font-medium text-gray-900">Nisal Sudharaka Weerarathne</span></p>
                     </div>
                 </div>
+
+                <!-- Payment History -->
+                <?php if (!empty($relatedPayments)): ?>
+                    <div class="mt-6 pt-4 border-t border-gray-200">
+                        <h4 class="text-base font-semibold text-gray-900 mb-3">Payment History:</h4>
+                        <div class="space-y-3">
+                            <?php foreach ($relatedPayments as $payment): ?>
+                                <div class="flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-100 rounded-lg">
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center space-x-2 mb-1">
+                                            <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                                            <span class="font-medium text-green-800 text-sm">Payment Received</span>
+                                        </div>
+                                        <div class="text-xs text-green-700 space-y-0.5">
+                                            <p><span class="font-medium">Date:</span> <?php echo date('M j, Y', strtotime($payment['payment_date'])); ?></p>
+                                            <p><span class="font-medium">Method:</span> <?php echo ucwords(str_replace('_', ' ', $payment['payment_method'])); ?></p>
+                                            <?php if (!empty($payment['payment_reference'])): ?>
+                                                <p><span class="font-medium">Reference:</span> <?php echo htmlspecialchars($payment['payment_reference']); ?></p>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                    <div class="text-right ml-4">
+                                        <p class="text-lg font-bold text-green-700">
+                                            LKR <?php echo number_format($payment['payment_amount'], 2); ?>
+                                        </p>
+                                        <p class="text-xs text-green-600">
+                                            <?php echo date('M j, g:i A', strtotime($payment['created_at'])); ?>
+                                        </p>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
 
                 <!-- Footer -->
                 <div class="mt-6 pt-4 border-t border-gray-200 text-center">
