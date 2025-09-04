@@ -131,17 +131,17 @@ try {
 include '../../includes/header.php';
 ?>
 
-<!-- Page Header -->
-<div class="mb-8">
+<!-- Page Header with Mobile-Optimized Layout -->
+<div class="mb-4">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-            <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Invoices</h1>
-            <p class="text-gray-600 mt-1">Manage and track all your invoices</p>
+            <h1 class="text-2xl font-bold text-gray-900">Invoices</h1>
+            <p class="text-gray-600 mt-1 hidden sm:block">Manage and track all your invoices</p>
         </div>
-        <div class="flex items-center space-x-3">
+        <div class="flex flex-col sm:flex-row gap-3">
             <a href="<?php echo Helper::baseUrl('modules/invoices/create.php'); ?>" 
-               class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+               class="btn-primary inline-flex items-center justify-center px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                 </svg>
                 Create Invoice
@@ -150,217 +150,259 @@ include '../../includes/header.php';
     </div>
 </div>
 
-<!-- Filters and Search -->
-<div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-    <form method="GET" class="space-y-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <!-- Search -->
-            <div>
-                <label for="search" class="block text-sm font-medium text-gray-700 mb-1">Search</label>
-                <div class="relative">
-                    <input type="text" name="search" id="search" 
-                           value="<?php echo htmlspecialchars($search); ?>"
-                           placeholder="Invoice number, client, project..."
-                           class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                        </svg>
+<!-- Mobile-First: Search and Quick Filters -->
+<div class="bg-white rounded-xl border border-gray-200 p-4 mb-4">
+    <form method="GET" class="space-y-4" id="filterForm">
+        <!-- Essential Search -->
+        <div class="relative">
+            <input type="text" 
+                   name="search" 
+                   value="<?php echo htmlspecialchars($search); ?>"
+                   placeholder="Search invoice #, client, project..."
+                   class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <svg class="w-5 h-5 text-gray-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+        </div>
+
+        <!-- Quick Status Filters -->
+        <div class="flex flex-wrap gap-2">
+            <button type="button" onclick="setStatusFilter('')" 
+                    class="status-filter flex-1 sm:flex-none px-3 py-2 text-sm rounded-lg border transition-colors whitespace-nowrap <?php echo empty($statusFilter) ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'; ?>">
+                All Status
+            </button>
+            <button type="button" onclick="setStatusFilter('sent')"
+                    class="status-filter flex-1 sm:flex-none px-3 py-2 text-sm rounded-lg border transition-colors whitespace-nowrap <?php echo $statusFilter === 'sent' ? 'bg-blue-100 text-blue-800 border-blue-300' : 'bg-white text-gray-700 border-gray-300 hover:bg-blue-50 hover:text-blue-700'; ?>">
+                Sent
+            </button>
+            <button type="button" onclick="setStatusFilter('partially_paid')"
+                    class="status-filter flex-1 sm:flex-none px-3 py-2 text-sm rounded-lg border transition-colors whitespace-nowrap <?php echo $statusFilter === 'partially_paid' ? 'bg-yellow-100 text-yellow-800 border-yellow-300' : 'bg-white text-gray-700 border-gray-300 hover:bg-yellow-50 hover:text-yellow-700'; ?>">
+                Partial
+            </button>
+            <button type="button" onclick="setStatusFilter('overdue')"
+                    class="status-filter flex-1 sm:flex-none px-3 py-2 text-sm rounded-lg border transition-colors whitespace-nowrap <?php echo $statusFilter === 'overdue' ? 'bg-red-100 text-red-800 border-red-300' : 'bg-white text-gray-700 border-gray-300 hover:bg-red-50 hover:text-red-700'; ?>">
+                Overdue
+            </button>
+        </div>
+
+        <!-- Mobile Filter Toggle Button -->
+        <div class="flex items-center justify-between">
+            <button type="button" id="mobileFiltersToggle" 
+                    class="lg:hidden inline-flex items-center text-sm text-blue-600 hover:text-blue-700">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z"></path>
+                </svg>
+                More Filters
+                <span class="ml-1 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full" id="activeFiltersCount">
+                    <?php 
+                    $activeFilters = array_filter(['client' => $clientFilter, 'date_from' => $dateFrom, 'date_to' => $dateTo], function($value) { 
+                        return !empty($value); 
+                    });
+                    echo count($activeFilters); 
+                    ?>
+                </span>
+            </button>
+            
+            <!-- Desktop: Show Advanced Filters Toggle -->
+            <button type="button" id="desktopFiltersToggle" 
+                    class="hidden lg:inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                <svg class="w-4 h-4 mr-2 transform transition-transform" id="desktopFiltersIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+                Advanced Filters
+            </button>
+        </div>
+
+        <!-- Advanced Filters - Hidden by Default on Mobile -->
+        <div id="advancedFilters" class="hidden border-t pt-4 space-y-4">
+            <!-- Client and Status Filters -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Client</label>
+                    <select name="client" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">All Clients</option>
+                        <?php foreach ($clients as $client): ?>
+                            <option value="<?php echo Helper::encryptId($client['id']); ?>" 
+                                    <?php echo $clientFilter === Helper::encryptId($client['id']) ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($client['company_name']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <select name="status" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="">All Statuses</option>
+                        <option value="draft" <?php echo $statusFilter === 'draft' ? 'selected' : ''; ?>>Draft</option>
+                        <option value="sent" <?php echo $statusFilter === 'sent' ? 'selected' : ''; ?>>Sent</option>
+                        <option value="partially_paid" <?php echo $statusFilter === 'partially_paid' ? 'selected' : ''; ?>>Partially Paid</option>
+                        <option value="paid" <?php echo $statusFilter === 'paid' ? 'selected' : ''; ?>>Paid</option>
+                        <option value="overdue" <?php echo $statusFilter === 'overdue' ? 'selected' : ''; ?>>Overdue</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Date Range Filters -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label for="date_from" class="block text-sm font-medium text-gray-700 mb-1">Date From</label>
+                    <input type="date" 
+                           name="date_from" 
+                           id="date_from"
+                           value="<?php echo htmlspecialchars($dateFrom); ?>"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="date_to" class="block text-sm font-medium text-gray-700 mb-1">Date To</label>
+                    <input type="date" 
+                           name="date_to" 
+                           id="date_to"
+                           value="<?php echo htmlspecialchars($dateTo); ?>"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+            </div>
+
+            <!-- Sort Options -->
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Sort By</label>
+                    <select name="sort" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="created_at" <?php echo $sortBy === 'created_at' ? 'selected' : ''; ?>>Created Date</option>
+                        <option value="invoice_date" <?php echo $sortBy === 'invoice_date' ? 'selected' : ''; ?>>Invoice Date</option>
+                        <option value="due_date" <?php echo $sortBy === 'due_date' ? 'selected' : ''; ?>>Due Date</option>
+                        <option value="invoice_number" <?php echo $sortBy === 'invoice_number' ? 'selected' : ''; ?>>Invoice Number</option>
+                        <option value="total_amount" <?php echo $sortBy === 'total_amount' ? 'selected' : ''; ?>>Amount</option>
+                        <option value="company_name" <?php echo $sortBy === 'company_name' ? 'selected' : ''; ?>>Client Name</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Order</label>
+                    <select name="order" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="DESC" <?php echo $sortOrder === 'DESC' ? 'selected' : ''; ?>>Newest First</option>
+                        <option value="ASC" <?php echo $sortOrder === 'ASC' ? 'selected' : ''; ?>>Oldest First</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Filter Actions -->
+            <div class="flex justify-between items-center pt-4 border-t">
+                <button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    Apply Filters
+                </button>
+                <a href="<?php echo Helper::baseUrl('modules/invoices/'); ?>" class="text-sm text-gray-600 hover:text-gray-900">Clear All</a>
+            </div>
+        </div>
+
+        <!-- Hidden inputs -->
+        <input type="hidden" name="status" id="statusFilter" value="<?php echo htmlspecialchars($statusFilter); ?>">
+    </form>
+</div>
+
+<!-- Active Filters Display - Compact -->
+<?php if (!empty(array_filter([$search, $statusFilter, $clientFilter, $dateFrom, $dateTo]))): ?>
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+        <div class="flex items-center justify-between">
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="text-sm font-medium text-blue-800">Filters:</span>
+                <?php if (!empty($search)): ?>
+                    <span class="inline-flex items-center px-2 py-1 bg-white border border-blue-200 rounded text-xs text-blue-800">
+                        "<?php echo htmlspecialchars(substr($search, 0, 20)) . (strlen($search) > 20 ? '...' : ''); ?>"
+                    </span>
+                <?php endif; ?>
+                <?php if (!empty($statusFilter)): ?>
+                    <span class="inline-flex items-center px-2 py-1 bg-white border border-blue-200 rounded text-xs text-blue-800">
+                        <?php echo ucwords(str_replace('_', ' ', $statusFilter)); ?>
+                    </span>
+                <?php endif; ?>
+                <?php if (!empty($clientFilter)): ?>
+                    <span class="inline-flex items-center px-2 py-1 bg-white border border-blue-200 rounded text-xs text-blue-800">
+                        Client Selected
+                    </span>
+                <?php endif; ?>
+            </div>
+            <a href="<?php echo Helper::baseUrl('modules/invoices/'); ?>" class="text-sm text-blue-600 hover:text-blue-700">Clear</a>
+        </div>
+    </div>
+<?php endif; ?>
+
+<!-- Invoices List - THE MAIN CONTENT -->
+<div class="space-y-4">
+    <?php if (empty($invoices)): ?>
+        <div class="bg-white rounded-xl border border-gray-200 p-12 text-center">
+            <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+            </svg>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">No invoices found</h3>
+            <p class="text-gray-600 mb-6">
+                <?php if (!empty(array_filter([$search, $statusFilter, $clientFilter, $dateFrom, $dateTo]))): ?>
+                    Try adjusting your filters or search terms.
+                <?php else: ?>
+                    Get started by creating your first invoice.
+                <?php endif; ?>
+            </p>
+            <?php if (empty(array_filter([$search, $statusFilter, $clientFilter, $dateFrom, $dateTo]))): ?>
+                <a href="<?php echo Helper::baseUrl('modules/invoices/create.php'); ?>" 
+                   class="inline-flex items-center px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Create First Invoice
+                </a>
+            <?php endif; ?>
+        </div>
+    <?php else: ?>
+        <!-- Invoices Table/Cards -->
+        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div class="p-4 border-b border-gray-100">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900">Invoice Records</h3>
+                        <p class="text-gray-600 text-sm mt-1">
+                            Showing <?php echo number_format(count($invoices)); ?> of <?php echo number_format($totalInvoices); ?> invoices
+                        </p>
                     </div>
                 </div>
             </div>
 
-            <!-- Status Filter -->
-            <div>
-                <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select name="status" id="status" 
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    <option value="">All Statuses</option>
-                    <option value="draft" <?php echo $statusFilter === 'draft' ? 'selected' : ''; ?>>Draft</option>
-                    <option value="sent" <?php echo $statusFilter === 'sent' ? 'selected' : ''; ?>>Sent</option>
-                    <option value="partially_paid" <?php echo $statusFilter === 'partially_paid' ? 'selected' : ''; ?>>Partially Paid</option>
-                    <option value="paid" <?php echo $statusFilter === 'paid' ? 'selected' : ''; ?>>Paid</option>
-                    <option value="overdue" <?php echo $statusFilter === 'overdue' ? 'selected' : ''; ?>>Overdue</option>
-                </select>
-            </div>
-
-            <!-- Client Filter -->
-            <div>
-                <label for="client" class="block text-sm font-medium text-gray-700 mb-1">Client</label>
-                <select name="client" id="client" 
-                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    <option value="">All Clients</option>
-                    <?php foreach ($clients as $client): ?>
-                        <option value="<?php echo Helper::encryptId($client['id']); ?>" 
-                                <?php echo $clientFilter === Helper::encryptId($client['id']) ? 'selected' : ''; ?>>
-                            <?php echo htmlspecialchars($client['company_name']); ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-
-            <!-- Date Range -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Date Range</label>
-                <div class="flex space-x-2">
-                    <input type="date" name="date_from" 
-                           value="<?php echo htmlspecialchars($dateFrom); ?>"
-                           class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    <input type="date" name="date_to" 
-                           value="<?php echo htmlspecialchars($dateTo); ?>"
-                           class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                </div>
-            </div>
-        </div>
-
-        <div class="flex flex-col sm:flex-row gap-3">
-            <button type="submit" 
-                    class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.414A1 1 0 013 6.707V4z"></path>
-                </svg>
-                Apply Filters
-            </button>
-            
-            <a href="<?php echo Helper::baseUrl('modules/invoices/'); ?>" 
-               class="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                </svg>
-                Clear Filters
-            </a>
-        </div>
-
-        <!-- Hidden sort parameters -->
-        <input type="hidden" name="sort" value="<?php echo htmlspecialchars($sortBy); ?>">
-        <input type="hidden" name="order" value="<?php echo htmlspecialchars($sortOrder); ?>">
-    </form>
-</div>
-
-<!-- Invoices Table -->
-<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-    <!-- Desktop Table -->
-    <div class="hidden lg:block overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th class="px-6 py-3 text-left">
-                        <a href="?<?php echo http_build_query(array_merge($_GET, ['sort' => 'invoice_number', 'order' => $sortBy === 'invoice_number' && $sortOrder === 'ASC' ? 'DESC' : 'ASC'])); ?>" 
-                           class="group inline-flex items-center text-xs font-medium text-gray-500 uppercase tracking-wider hover:text-gray-700">
-                            Invoice #
-                            <?php if ($sortBy === 'invoice_number'): ?>
-                                <svg class="ml-2 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <?php if ($sortOrder === 'ASC'): ?>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
-                                    <?php else: ?>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                    <?php endif; ?>
-                                </svg>
-                            <?php endif; ?>
-                        </a>
-                    </th>
-                    <th class="px-6 py-3 text-left">
-                        <a href="?<?php echo http_build_query(array_merge($_GET, ['sort' => 'company_name', 'order' => $sortBy === 'company_name' && $sortOrder === 'ASC' ? 'DESC' : 'ASC'])); ?>" 
-                           class="group inline-flex items-center text-xs font-medium text-gray-500 uppercase tracking-wider hover:text-gray-700">
-                            Client
-                            <?php if ($sortBy === 'company_name'): ?>
-                                <svg class="ml-2 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <?php if ($sortOrder === 'ASC'): ?>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
-                                    <?php else: ?>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                    <?php endif; ?>
-                                </svg>
-                            <?php endif; ?>
-                        </a>
-                    </th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project</th>
-                    <th class="px-6 py-3 text-left">
-                        <a href="?<?php echo http_build_query(array_merge($_GET, ['sort' => 'invoice_date', 'order' => $sortBy === 'invoice_date' && $sortOrder === 'ASC' ? 'DESC' : 'ASC'])); ?>" 
-                           class="group inline-flex items-center text-xs font-medium text-gray-500 uppercase tracking-wider hover:text-gray-700">
-                            Date
-                            <?php if ($sortBy === 'invoice_date'): ?>
-                                <svg class="ml-2 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <?php if ($sortOrder === 'ASC'): ?>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
-                                    <?php else: ?>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                    <?php endif; ?>
-                                </svg>
-                            <?php endif; ?>
-                        </a>
-                    </th>
-                    <th class="px-6 py-3 text-right">
-                        <a href="?<?php echo http_build_query(array_merge($_GET, ['sort' => 'total_amount', 'order' => $sortBy === 'total_amount' && $sortOrder === 'ASC' ? 'DESC' : 'ASC'])); ?>" 
-                           class="group inline-flex items-center text-xs font-medium text-gray-500 uppercase tracking-wider hover:text-gray-700">
-                            Total
-                            <?php if ($sortBy === 'total_amount'): ?>
-                                <svg class="ml-2 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <?php if ($sortOrder === 'ASC'): ?>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
-                                    <?php else: ?>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                    <?php endif; ?>
-                                </svg>
-                            <?php endif; ?>
-                        </a>
-                    </th>
-                    <th class="px-6 py-3 text-right">
-                        <a href="?<?php echo http_build_query(array_merge($_GET, ['sort' => 'balance_amount', 'order' => $sortBy === 'balance_amount' && $sortOrder === 'ASC' ? 'DESC' : 'ASC'])); ?>" 
-                           class="group inline-flex items-center text-xs font-medium text-gray-500 uppercase tracking-wider hover:text-gray-700">
-                            Balance
-                            <?php if ($sortBy === 'balance_amount'): ?>
-                                <svg class="ml-2 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <?php if ($sortOrder === 'ASC'): ?>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
-                                    <?php else: ?>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                    <?php endif; ?>
-                                </svg>
-                            <?php endif; ?>
-                        </a>
-                    </th>
-                    <th class="px-6 py-3 text-left">
-                        <a href="?<?php echo http_build_query(array_merge($_GET, ['sort' => 'status', 'order' => $sortBy === 'status' && $sortOrder === 'ASC' ? 'DESC' : 'ASC'])); ?>" 
-                           class="group inline-flex items-center text-xs font-medium text-gray-500 uppercase tracking-wider hover:text-gray-700">
-                            Status
-                            <?php if ($sortBy === 'status'): ?>
-                                <svg class="ml-2 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <?php if ($sortOrder === 'ASC'): ?>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
-                                    <?php else: ?>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                    <?php endif; ?>
-                                </svg>
-                            <?php endif; ?>
-                        </a>
-                    </th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-                <?php if (empty($invoices)): ?>
-                    <tr>
-                        <td colspan="8" class="px-6 py-12 text-center">
-                            <svg class="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                            </svg>
-                            <h3 class="text-lg font-medium text-gray-900 mb-2">No invoices found</h3>
-                            <p class="text-gray-600 mb-4">Get started by creating your first invoice.</p>
-                            <a href="<?php echo Helper::baseUrl('modules/invoices/create.php'); ?>" 
-                               class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                                </svg>
-                                Create Invoice
-                            </a>
-                        </td>
-                    </tr>
-                <?php else: ?>
-                    <?php foreach ($invoices as $invoice): ?>
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center">
+            <!-- Desktop Table -->
+            <div class="hidden md:block overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Invoice #
+                            </th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Client
+                            </th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Project
+                            </th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Date
+                            </th>
+                            <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Total
+                            </th>
+                            <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Balance
+                            </th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Status
+                            </th>
+                            <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Actions
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <?php foreach ($invoices as $invoice): ?>
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <!-- Invoice # -->
+                                <td class="px-4 py-4 whitespace-nowrap">
                                     <div>
                                         <div class="text-sm font-medium text-gray-900">
                                             <a href="<?php echo Helper::baseUrl('modules/invoices/view.php?id=' . Helper::encryptId($invoice['id'])); ?>" 
@@ -368,38 +410,117 @@ include '../../includes/header.php';
                                                 #<?php echo htmlspecialchars($invoice['invoice_number']); ?>
                                             </a>
                                         </div>
-                                        <div class="text-sm text-gray-500">
-                                            <?php echo Helper::formatDate($invoice['due_date'], 'M j, Y'); ?>
+                                        <div class="text-xs text-gray-500">
+                                            Due: <?php echo Helper::formatDate($invoice['due_date'], 'M j, Y'); ?>
                                         </div>
                                     </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="text-sm font-medium text-gray-900"><?php echo htmlspecialchars($invoice['company_name']); ?></div>
-                                <div class="text-sm text-gray-500"><?php echo htmlspecialchars($invoice['contact_person']); ?></div>
-                            </td>
-                            <td class="px-6 py-4">
-                                <?php if ($invoice['project_name']): ?>
-                                    <div class="text-sm text-gray-900"><?php echo htmlspecialchars($invoice['project_name']); ?></div>
-                                    <div class="text-xs text-gray-500"><?php echo ucfirst(str_replace('_', ' ', $invoice['project_type'])); ?></div>
-                                <?php else: ?>
-                                    <span class="text-sm text-gray-400">No project</span>
-                                <?php endif; ?>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                <?php echo Helper::formatDate($invoice['invoice_date'], 'M j, Y'); ?>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">
-                                <?php echo Helper::formatCurrency($invoice['total_amount']); ?>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-right">
-                                <?php if ($invoice['balance_amount'] > 0): ?>
-                                    <span class="font-medium text-red-600"><?php echo Helper::formatCurrency($invoice['balance_amount']); ?></span>
-                                <?php else: ?>
-                                    <span class="font-medium text-green-600">Paid</span>
-                                <?php endif; ?>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
+                                </td>
+
+                                <!-- Client -->
+                                <td class="px-4 py-4">
+                                    <div class="text-sm font-medium text-gray-900"><?php echo htmlspecialchars($invoice['company_name']); ?></div>
+                                    <div class="text-xs text-gray-500"><?php echo htmlspecialchars($invoice['contact_person']); ?></div>
+                                </td>
+
+                                <!-- Project -->
+                                <td class="px-4 py-4">
+                                    <?php if ($invoice['project_name']): ?>
+                                        <div class="text-sm text-gray-900"><?php echo htmlspecialchars($invoice['project_name']); ?></div>
+                                        <div class="text-xs text-gray-500"><?php echo ucfirst(str_replace('_', ' ', $invoice['project_type'])); ?></div>
+                                    <?php else: ?>
+                                        <span class="text-sm text-gray-400">No project</span>
+                                    <?php endif; ?>
+                                </td>
+
+                                <!-- Date -->
+                                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <?php echo Helper::formatDate($invoice['invoice_date'], 'M j, Y'); ?>
+                                </td>
+
+                                <!-- Total -->
+                                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">
+                                    <?php echo Helper::formatCurrency($invoice['total_amount']); ?>
+                                </td>
+
+                                <!-- Balance -->
+                                <td class="px-4 py-4 whitespace-nowrap text-sm text-right">
+                                    <?php if ($invoice['balance_amount'] > 0): ?>
+                                        <span class="font-medium text-red-600"><?php echo Helper::formatCurrency($invoice['balance_amount']); ?></span>
+                                    <?php else: ?>
+                                        <span class="font-medium text-green-600">Paid</span>
+                                    <?php endif; ?>
+                                </td>
+
+                                <!-- Status -->
+                                <td class="px-4 py-4 whitespace-nowrap">
+                                    <?php 
+                                    $status = $invoice['status'];
+                                    $statusClasses = [
+                                        'draft' => 'bg-gray-100 text-gray-800',
+                                        'sent' => 'bg-blue-100 text-blue-800',
+                                        'paid' => 'bg-green-100 text-green-800',
+                                        'partially_paid' => 'bg-yellow-100 text-yellow-800',
+                                        'overdue' => 'bg-red-100 text-red-800'
+                                    ];
+                                    $badgeClass = $statusClasses[$status] ?? 'bg-gray-100 text-gray-800';
+                                    ?>
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <?php echo $badgeClass; ?>">
+                                        <?php echo ucwords(str_replace('_', ' ', $status)); ?>
+                                    </span>
+                                </td>
+
+                                <!-- Actions -->
+                                <td class="px-4 py-4 whitespace-nowrap text-right">
+                                    <div class="flex items-center justify-end space-x-2">
+                                        <a href="<?php echo Helper::baseUrl('modules/invoices/view.php?id=' . Helper::encryptId($invoice['id'])); ?>" 
+                                           class="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors text-xs"
+                                           title="View">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            </svg>
+                                        </a>
+                                        <a href="<?php echo Helper::baseUrl('modules/invoices/edit.php?id=' . Helper::encryptId($invoice['id'])); ?>" 
+                                           class="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors text-xs"
+                                           title="Edit">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                            </svg>
+                                        </a>
+                                        <?php if ($invoice['balance_amount'] > 0): ?>
+                                            <a href="<?php echo Helper::baseUrl('modules/payments/create.php?invoice_id=' . Helper::encryptId($invoice['id'])); ?>" 
+                                               class="inline-flex items-center px-2 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors text-xs"
+                                               title="Record Payment">
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                                </svg>
+                                            </a>
+                                        <?php endif; ?>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Mobile Cards - Prioritized Content -->
+            <div class="md:hidden divide-y divide-gray-200">
+                <?php foreach ($invoices as $invoice): ?>
+                    <div class="p-4 hover:bg-gray-50 transition-colors">
+                        <!-- Invoice Header -->
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="flex-1 min-w-0">
+                                <h3 class="text-sm font-semibold text-gray-900">
+                                    <a href="<?php echo Helper::baseUrl('modules/invoices/view.php?id=' . Helper::encryptId($invoice['id'])); ?>" 
+                                       class="hover:text-blue-600 transition-colors">
+                                        #<?php echo htmlspecialchars($invoice['invoice_number']); ?>
+                                    </a>
+                                </h3>
+                                <p class="text-xs text-gray-500 mt-1">
+                                    <?php echo Helper::formatDate($invoice['invoice_date'], 'M j, Y'); ?>
+                                </p>
+                            </div>
+                            <div class="ml-3">
                                 <?php 
                                 $status = $invoice['status'];
                                 $statusClasses = [
@@ -411,218 +532,119 @@ include '../../includes/header.php';
                                 ];
                                 $badgeClass = $statusClasses[$status] ?? 'bg-gray-100 text-gray-800';
                                 ?>
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <?php echo $badgeClass; ?>">
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium <?php echo $badgeClass; ?>">
                                     <?php echo ucwords(str_replace('_', ' ', $status)); ?>
                                 </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <div class="flex items-center justify-end space-x-2">
-                                    <a href="<?php echo Helper::baseUrl('modules/invoices/view.php?id=' . Helper::encryptId($invoice['id'])); ?>" 
-                                       class="text-blue-600 hover:text-blue-900 transition-colors">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                        </svg>
-                                    </a>
-                                    <a href="<?php echo Helper::baseUrl('modules/invoices/edit.php?id=' . Helper::encryptId($invoice['id'])); ?>" 
-                                       class="text-gray-600 hover:text-gray-900 transition-colors">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                        </svg>
-                                    </a>
-                                    <?php if ($invoice['balance_amount'] > 0): ?>
-                                        <a href="<?php echo Helper::baseUrl('modules/payments/create.php?invoice_id=' . Helper::encryptId($invoice['id'])); ?>" 
-                                           class="text-green-600 hover:text-green-900 transition-colors" title="Record Payment">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                                            </svg>
-                                        </a>
-                                    <?php endif; ?>
-                                </div>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
+                            </div>
+                        </div>
 
-    <!-- Mobile Cards -->
-    <div class="lg:hidden divide-y divide-gray-200">
-        <?php if (empty($invoices)): ?>
-            <div class="p-6 text-center">
-                <svg class="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                </svg>
-                <h3 class="text-lg font-medium text-gray-900 mb-2">No invoices found</h3>
-                <p class="text-gray-600 mb-4">Get started by creating your first invoice.</p>
-                <a href="<?php echo Helper::baseUrl('modules/invoices/create.php'); ?>" 
-                   class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                    </svg>
-                    Create Invoice
-                </a>
-            </div>
-        <?php else: ?>
-            <?php foreach ($invoices as $invoice): ?>
-                <div class="p-6">
-                    <div class="flex items-start justify-between mb-3">
-                        <div>
-                            <h3 class="text-lg font-medium text-gray-900">
-                                <a href="<?php echo Helper::baseUrl('modules/invoices/view.php?id=' . Helper::encryptId($invoice['id'])); ?>" 
-                                   class="hover:text-blue-600 transition-colors">
-                                    #<?php echo htmlspecialchars($invoice['invoice_number']); ?>
-                                </a>
-                            </h3>
-                            <p class="text-sm text-gray-600"><?php echo htmlspecialchars($invoice['company_name']); ?></p>
+                        <!-- Client & Amount -->
+                        <div class="grid grid-cols-2 gap-4 mb-3">
+                            <div>
+                                <p class="text-xs text-gray-500">Client</p>
+                                <p class="text-sm font-medium text-gray-900">
+                                    <?php echo htmlspecialchars($invoice['company_name']); ?>
+                                </p>
+                                <p class="text-xs text-gray-500">
+                                    <?php echo htmlspecialchars($invoice['contact_person']); ?>
+                                </p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-xs text-gray-500">Total</p>
+                                <p class="text-sm font-semibold text-gray-900">
+                                    <?php echo Helper::formatCurrency($invoice['total_amount']); ?>
+                                </p>
+                                <p class="text-xs <?php echo $invoice['balance_amount'] > 0 ? 'text-red-600' : 'text-green-600'; ?>">
+                                    <?php if ($invoice['balance_amount'] > 0): ?>
+                                        Balance: <?php echo Helper::formatCurrency($invoice['balance_amount']); ?>
+                                    <?php else: ?>
+                                        Paid in Full
+                                    <?php endif; ?>
+                                </p>
+                            </div>
                         </div>
-                        <?php 
-                        $status = $invoice['status'];
-                        $statusClasses = [
-                            'draft' => 'bg-gray-100 text-gray-800',
-                            'sent' => 'bg-blue-100 text-blue-800',
-                            'paid' => 'bg-green-100 text-green-800',
-                            'partially_paid' => 'bg-yellow-100 text-yellow-800',
-                            'overdue' => 'bg-red-100 text-red-800'
-                        ];
-                        $badgeClass = $statusClasses[$status] ?? 'bg-gray-100 text-gray-800';
-                        ?>
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <?php echo $badgeClass; ?>">
-                            <?php echo ucwords(str_replace('_', ' ', $status)); ?>
-                        </span>
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-4 text-sm mb-4">
-                        <div>
-                            <span class="text-gray-500">Date:</span>
-                            <span class="font-medium"><?php echo Helper::formatDate($invoice['invoice_date'], 'M j, Y'); ?></span>
+
+                        <!-- Project & Due Date -->
+                        <div class="grid grid-cols-2 gap-4 mb-3">
+                            <div>
+                                <p class="text-xs text-gray-500">Project</p>
+                                <?php if ($invoice['project_name']): ?>
+                                    <p class="text-sm text-gray-900"><?php echo htmlspecialchars($invoice['project_name']); ?></p>
+                                    <p class="text-xs text-gray-500"><?php echo ucfirst(str_replace('_', ' ', $invoice['project_type'])); ?></p>
+                                <?php else: ?>
+                                    <p class="text-sm text-gray-400">No project</p>
+                                <?php endif; ?>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-xs text-gray-500">Due Date</p>
+                                <p class="text-sm text-gray-900">
+                                    <?php echo Helper::formatDate($invoice['due_date'], 'M j, Y'); ?>
+                                </p>
+                            </div>
                         </div>
-                        <div>
-                            <span class="text-gray-500">Due:</span>
-                            <span class="font-medium"><?php echo Helper::formatDate($invoice['due_date'], 'M j, Y'); ?></span>
-                        </div>
-                        <div>
-                            <span class="text-gray-500">Total:</span>
-                            <span class="font-medium"><?php echo Helper::formatCurrency($invoice['total_amount']); ?></span>
-                        </div>
-                        <div>
-                            <span class="text-gray-500">Balance:</span>
-                            <?php if ($invoice['balance_amount'] > 0): ?>
-                                <span class="font-medium text-red-600"><?php echo Helper::formatCurrency($invoice['balance_amount']); ?></span>
-                            <?php else: ?>
-                                <span class="font-medium text-green-600">Paid</span>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                    
-                    <div class="flex items-center justify-between">
-                        <?php if ($invoice['project_name']): ?>
-                            <span class="text-sm text-gray-600"><?php echo htmlspecialchars($invoice['project_name']); ?></span>
-                        <?php else: ?>
-                            <span class="text-sm text-gray-400">No project</span>
-                        <?php endif; ?>
-                        
-                        <div class="flex items-center space-x-3">
+
+                        <!-- Actions -->
+                        <div class="flex space-x-2">
                             <a href="<?php echo Helper::baseUrl('modules/invoices/view.php?id=' . Helper::encryptId($invoice['id'])); ?>" 
-                               class="text-blue-600 hover:text-blue-900 transition-colors">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                </svg>
+                               class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-gray-100 text-gray-700 rounded text-xs font-medium hover:bg-gray-200 transition-colors">
+                                View
                             </a>
                             <a href="<?php echo Helper::baseUrl('modules/invoices/edit.php?id=' . Helper::encryptId($invoice['id'])); ?>" 
-                               class="text-gray-600 hover:text-gray-900 transition-colors">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                </svg>
+                               class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-blue-100 text-blue-700 rounded text-xs font-medium hover:bg-blue-200 transition-colors">
+                                Edit
                             </a>
                             <?php if ($invoice['balance_amount'] > 0): ?>
                                 <a href="<?php echo Helper::baseUrl('modules/payments/create.php?invoice_id=' . Helper::encryptId($invoice['id'])); ?>" 
-                                   class="text-green-600 hover:text-green-900 transition-colors">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                                    </svg>
+                                   class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-green-100 text-green-700 rounded text-xs font-medium hover:bg-green-200 transition-colors">
+                                    Payment
                                 </a>
                             <?php endif; ?>
                         </div>
                     </div>
-                </div>
-            <?php endforeach; ?>
-        <?php endif; ?>
-    </div>
-</div>
-
-<!-- Pagination -->
-<?php if ($totalPages > 1): ?>
-    <div class="mt-6 flex items-center justify-between">
-        <div class="flex-1 flex justify-between sm:hidden">
-            <?php if ($page > 1): ?>
-                <a href="?<?php echo http_build_query(array_merge($_GET, ['page' => $page - 1])); ?>" 
-                   class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                    Previous
-                </a>
-            <?php endif; ?>
-            
-            <?php if ($page < $totalPages): ?>
-                <a href="?<?php echo http_build_query(array_merge($_GET, ['page' => $page + 1])); ?>" 
-                   class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                    Next
-                </a>
-            <?php endif; ?>
-        </div>
-        
-        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-            <div>
-                <p class="text-sm text-gray-700">
-                    Showing <span class="font-medium"><?php echo (($page - 1) * $perPage) + 1; ?></span> 
-                    to <span class="font-medium"><?php echo min($page * $perPage, $totalInvoices); ?></span> 
-                    of <span class="font-medium"><?php echo $totalInvoices; ?></span> results
-                </p>
+                <?php endforeach; ?>
             </div>
-            
-            <div>
-                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                    <?php if ($page > 1): ?>
-                        <a href="?<?php echo http_build_query(array_merge($_GET, ['page' => $page - 1])); ?>" 
-                           class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                            <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
-                            </svg>
-                        </a>
-                    <?php endif; ?>
+        </div>
+
+        <!-- Pagination -->
+        <?php if ($totalPages > 1): ?>
+            <div class="bg-white rounded-xl border border-gray-200 p-4">
+                <div class="flex items-center justify-between">
+                    <div class="text-sm text-gray-600 hidden sm:block">
+                        Showing <?php echo (($page - 1) * $perPage) + 1; ?> to <?php echo min($page * $perPage, $totalInvoices); ?> of <?php echo $totalInvoices; ?> invoices
+                    </div>
                     
-                    <?php
-                    $start = max(1, $page - 2);
-                    $end = min($totalPages, $page + 2);
-                    
-                    for ($i = $start; $i <= $end; $i++):
-                    ?>
-                        <?php if ($i == $page): ?>
-                            <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-blue-50 text-sm font-medium text-blue-600">
-                                <?php echo $i; ?>
-                            </span>
-                        <?php else: ?>
-                            <a href="?<?php echo http_build_query(array_merge($_GET, ['page' => $i])); ?>" 
-                               class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
-                                <?php echo $i; ?>
+                    <div class="flex space-x-2 mx-auto sm:mx-0">
+                        <?php if ($page > 1): ?>
+                            <a href="?<?php echo http_build_query(array_merge($_GET, ['page' => $page - 1])); ?>" 
+                               class="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm">
+                                ← Prev
                             </a>
                         <?php endif; ?>
-                    <?php endfor; ?>
-                    
-                    <?php if ($page < $totalPages): ?>
-                        <a href="?<?php echo http_build_query(array_merge($_GET, ['page' => $page + 1])); ?>" 
-                           class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                            <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                            </svg>
-                        </a>
-                    <?php endif; ?>
-                </nav>
+
+                        <?php
+                        $startPage = max(1, $page - 2);
+                        $endPage = min($totalPages, $page + 2);
+                        
+                        for ($i = $startPage; $i <= $endPage; $i++):
+                        ?>
+                            <a href="?<?php echo http_build_query(array_merge($_GET, ['page' => $i])); ?>" 
+                               class="px-3 py-2 rounded-lg transition-colors text-sm <?php echo $i === $page ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'; ?>">
+                                <?php echo $i; ?>
+                            </a>
+                        <?php endfor; ?>
+
+                        <?php if ($page < $totalPages): ?>
+                            <a href="?<?php echo http_build_query(array_merge($_GET, ['page' => $page + 1])); ?>" 
+                               class="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm">
+                                Next →
+                            </a>
+                        <?php endif; ?>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
-<?php endif; ?>
+        <?php endif; ?>
+    <?php endif; ?>
+</div>
 
 <style>
 /* Custom styles for better UX */

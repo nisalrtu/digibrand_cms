@@ -83,50 +83,21 @@ try {
 include '../../includes/header.php';
 ?>
 
-<!-- Enhanced Breadcrumb Navigation -->
-<nav class="mb-8">
-    <div class="flex items-center space-x-2 text-sm">
-        <a href="<?php echo Helper::baseUrl('modules/invoices/'); ?>" 
-           class="text-gray-500 hover:text-gray-700 transition-colors font-medium">
-            Invoices
-        </a>
-        <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5l7 7-7 7"></path>
-        </svg>
-        <?php if ($invoice['project_id']): ?>
-            <a href="<?php echo Helper::baseUrl('modules/projects/view.php?id=' . Helper::encryptId($invoice['project_id'])); ?>" 
-               class="text-gray-500 hover:text-gray-700 transition-colors font-medium">
-                <?php echo htmlspecialchars($invoice['project_name']); ?>
-            </a>
-            <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5l7 7-7 7"></path>
-            </svg>
-        <?php endif; ?>
-        <a href="<?php echo Helper::baseUrl('modules/clients/view.php?id=' . Helper::encryptId($invoice['client_id'])); ?>" 
-           class="text-gray-500 hover:text-gray-700 transition-colors font-medium">
-            <?php echo htmlspecialchars($invoice['company_name']); ?>
-        </a>
-        <svg class="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5l7 7-7 7"></path>
-        </svg>
-        <span class="text-gray-900 font-semibold"><?php echo htmlspecialchars($invoice['invoice_number']); ?></span>
-    </div>
-</nav>
 
 <!-- Main Content Grid -->
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-6 lg:gap-8">
     <!-- Left Column (Main Content) -->
-    <div class="lg:col-span-2 space-y-6">
+    <div class="xl:col-span-2 space-y-4 md:space-y-6">
         
         <!-- Invoice Header Card -->
-        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm">
+        <div class="bg-white rounded-xl md:rounded-2xl border border-gray-100 shadow-sm">
             <!-- Header Section -->
-            <div class="p-6 border-b border-gray-50">
+            <div class="p-4 md:p-6 border-b border-gray-50">
                 <?php if ($invoice['project_id']): ?>
-                    <div class="mb-4">
+                    <div class="mb-3 md:mb-4">
                         <a href="<?php echo Helper::baseUrl('modules/projects/view.php?id=' . Helper::encryptId($invoice['project_id'])); ?>" 
-                           class="inline-flex items-center text-sm text-gray-600 hover:text-gray-800 transition-colors">
-                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                           class="inline-flex items-center text-xs md:text-sm text-gray-600 hover:text-gray-800 transition-colors">
+                            <svg class="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                             </svg>
                             Back to Project
@@ -134,77 +105,79 @@ include '../../includes/header.php';
                     </div>
                 <?php endif; ?>
                 
-                <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                    <div>
-                        <h1 class="text-3xl font-bold text-gray-900 mb-2">
-                            Invoice #<?php echo htmlspecialchars($invoice['invoice_number']); ?>
-                        </h1>
-                        <?php if ($invoice['project_name']): ?>
-                            <p class="text-lg text-gray-600 font-medium">
-                                <?php echo htmlspecialchars($invoice['project_name']); ?>
-                            </p>
-                        <?php endif; ?>
-                    </div>
-                    
-                    <!-- Enhanced Status Badge -->
-                    <div class="flex-shrink-0">
-                        <?php 
-                        $status = $invoice['status'];
-                        $statusConfig = [
-                            'draft' => [
-                                'class' => 'bg-gray-50 text-gray-700 border-gray-200',
-                                'icon' => '<svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 2a2 2 0 00-2 2v11a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2H4zm0 2h12v11H4V4z" clip-rule="evenodd"></path></svg>',
-                                'label' => 'Draft'
-                            ],
-                            'sent' => [
-                                'class' => 'bg-blue-50 text-blue-700 border-blue-200',
-                                'icon' => '<svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>',
-                                'label' => 'Sent'
-                            ],
-                            'paid' => [
-                                'class' => 'bg-green-50 text-green-700 border-green-200',
-                                'icon' => '<svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>',
-                                'label' => 'Paid'
-                            ],
-                            'partially_paid' => [
-                                'class' => 'bg-amber-50 text-amber-700 border-amber-200',
-                                'icon' => '<svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path></svg>',
-                                'label' => 'Partially Paid'
-                            ],
-                            'overdue' => [
-                                'class' => 'bg-red-50 text-red-700 border-red-200',
-                                'icon' => '<svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>',
-                                'label' => 'Overdue'
-                            ]
-                        ];
-                        $config = $statusConfig[$status] ?? $statusConfig['draft'];
-                        ?>
-                        <div class="inline-flex items-center px-4 py-2 rounded-xl border font-semibold text-sm <?php echo $config['class']; ?>">
-                            <?php echo $config['icon'] . $config['label']; ?>
+                <div class="flex flex-col gap-3 md:gap-4">
+                    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                        <div class="min-w-0 flex-1">
+                            <h1 class="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 mb-1 md:mb-2 break-words">
+                                Invoice #<?php echo htmlspecialchars($invoice['invoice_number']); ?>
+                            </h1>
+                            <?php if ($invoice['project_name']): ?>
+                                <p class="text-sm md:text-base lg:text-lg text-gray-600 font-medium break-words">
+                                    <?php echo htmlspecialchars($invoice['project_name']); ?>
+                                </p>
+                            <?php endif; ?>
+                        </div>
+                        
+                        <!-- Enhanced Status Badge -->
+                        <div class="flex-shrink-0 self-start">
+                            <?php 
+                            $status = $invoice['status'];
+                            $statusConfig = [
+                                'draft' => [
+                                    'class' => 'bg-gray-50 text-gray-700 border-gray-200',
+                                    'icon' => '<svg class="w-3 h-3 md:w-4 md:h-4 mr-1.5 md:mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 2a2 2 0 00-2 2v11a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2H4zm0 2h12v11H4V4z" clip-rule="evenodd"></path></svg>',
+                                    'label' => 'Draft'
+                                ],
+                                'sent' => [
+                                    'class' => 'bg-blue-50 text-blue-700 border-blue-200',
+                                    'icon' => '<svg class="w-3 h-3 md:w-4 md:h-4 mr-1.5 md:mr-2" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>',
+                                    'label' => 'Sent'
+                                ],
+                                'paid' => [
+                                    'class' => 'bg-green-50 text-green-700 border-green-200',
+                                    'icon' => '<svg class="w-3 h-3 md:w-4 md:h-4 mr-1.5 md:mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>',
+                                    'label' => 'Paid'
+                                ],
+                                'partially_paid' => [
+                                    'class' => 'bg-amber-50 text-amber-700 border-amber-200',
+                                    'icon' => '<svg class="w-3 h-3 md:w-4 md:h-4 mr-1.5 md:mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path></svg>',
+                                    'label' => 'Partially Paid'
+                                ],
+                                'overdue' => [
+                                    'class' => 'bg-red-50 text-red-700 border-red-200',
+                                    'icon' => '<svg class="w-3 h-3 md:w-4 md:h-4 mr-1.5 md:mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>',
+                                    'label' => 'Overdue'
+                                ]
+                            ];
+                            $config = $statusConfig[$status] ?? $statusConfig['draft'];
+                            ?>
+                            <div class="inline-flex items-center px-3 py-1.5 md:px-4 md:py-2 rounded-lg md:rounded-xl border font-semibold text-xs md:text-sm <?php echo $config['class']; ?>">
+                                <?php echo $config['icon'] . $config['label']; ?>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Invoice Details Grid -->
-            <div class="p-6">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div class="p-4 md:p-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-4 md:mb-6">
                     <div class="space-y-1">
-                        <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Invoice Date</h3>
-                        <p class="text-base font-semibold text-gray-900"><?php echo Helper::formatDate($invoice['invoice_date'], 'M j, Y'); ?></p>
+                        <h3 class="text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wide">Invoice Date</h3>
+                        <p class="text-sm md:text-base font-semibold text-gray-900"><?php echo Helper::formatDate($invoice['invoice_date'], 'M j, Y'); ?></p>
                     </div>
                     <div class="space-y-1">
-                        <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Due Date</h3>
-                        <p class="text-base font-semibold <?php echo (strtotime($invoice['due_date']) < time() && $invoice['status'] !== 'paid') ? 'text-red-600' : 'text-gray-900'; ?>">
+                        <h3 class="text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wide">Due Date</h3>
+                        <p class="text-sm md:text-base font-semibold <?php echo (strtotime($invoice['due_date']) < time() && $invoice['status'] !== 'paid') ? 'text-red-600' : 'text-gray-900'; ?>">
                             <?php echo Helper::formatDate($invoice['due_date'], 'M j, Y'); ?>
                             <?php if (strtotime($invoice['due_date']) < time() && $invoice['status'] !== 'paid'): ?>
                                 <span class="block text-xs text-red-500 font-normal mt-0.5">Overdue</span>
                             <?php endif; ?>
                         </p>
                     </div>
-                    <div class="space-y-1">
-                        <h3 class="text-sm font-medium text-gray-500 uppercase tracking-wide">Created</h3>
-                        <p class="text-base font-semibold text-gray-900">
+                    <div class="space-y-1 sm:col-span-2 lg:col-span-1">
+                        <h3 class="text-xs md:text-sm font-medium text-gray-500 uppercase tracking-wide">Created</h3>
+                        <p class="text-sm md:text-base font-semibold text-gray-900">
                             <?php echo Helper::formatDate($invoice['created_at'], 'M j, Y'); ?>
                             <?php if ($invoice['created_by_name']): ?>
                                 <span class="block text-xs text-gray-500 font-normal mt-0.5">by <?php echo htmlspecialchars($invoice['created_by_name']); ?></span>
@@ -214,19 +187,19 @@ include '../../includes/header.php';
                 </div>
 
                 <!-- Client Information -->
-                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl p-5">
-                    <h3 class="font-semibold text-blue-900 mb-3 text-sm uppercase tracking-wide">Bill To</h3>
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-lg md:rounded-xl p-4 md:p-5">
+                    <h3 class="font-semibold text-blue-900 mb-2 md:mb-3 text-xs md:text-sm uppercase tracking-wide">Bill To</h3>
                     <div class="text-blue-800">
-                        <p class="font-bold text-lg text-blue-900 mb-1"><?php echo htmlspecialchars($invoice['company_name']); ?></p>
-                        <p class="font-medium mb-2"><?php echo htmlspecialchars($invoice['contact_person']); ?></p>
+                        <p class="font-bold text-base md:text-lg text-blue-900 mb-1 break-words"><?php echo htmlspecialchars($invoice['company_name']); ?></p>
+                        <p class="font-medium mb-2 break-words"><?php echo htmlspecialchars($invoice['contact_person']); ?></p>
                         <?php if (!empty($invoice['address'])): ?>
-                            <p class="text-sm opacity-90"><?php echo htmlspecialchars($invoice['address']); ?></p>
+                            <p class="text-sm opacity-90 break-words"><?php echo htmlspecialchars($invoice['address']); ?></p>
                         <?php endif; ?>
                         <?php if (!empty($invoice['city'])): ?>
-                            <p class="text-sm opacity-90"><?php echo htmlspecialchars($invoice['city']); ?></p>
+                            <p class="text-sm opacity-90 break-words"><?php echo htmlspecialchars($invoice['city']); ?></p>
                         <?php endif; ?>
                         <?php if (!empty($invoice['mobile_number'])): ?>
-                            <p class="text-sm font-medium mt-2">📞 <?php echo htmlspecialchars($invoice['mobile_number']); ?></p>
+                            <p class="text-sm font-medium mt-2 break-all">📞 <?php echo htmlspecialchars($invoice['mobile_number']); ?></p>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -234,15 +207,15 @@ include '../../includes/header.php';
         </div>
 
         <!-- Invoice Items Card -->
-        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm">
-            <div class="p-6 border-b border-gray-50">
-                <h2 class="text-xl font-bold text-gray-900">Invoice Items</h2>
+        <div class="bg-white rounded-xl md:rounded-2xl border border-gray-100 shadow-sm">
+            <div class="p-4 md:p-6 border-b border-gray-50">
+                <h2 class="text-lg md:text-xl font-bold text-gray-900">Invoice Items</h2>
             </div>
             
-            <div class="p-6">
+            <div class="p-4 md:p-6">
                 <?php if (!empty($invoiceItems)): ?>
                     <!-- Desktop Table View -->
-                    <div class="hidden md:block">
+                    <div class="hidden lg:block">
                         <div class="overflow-hidden rounded-xl border border-gray-100">
                             <table class="min-w-full divide-y divide-gray-100">
                                 <thead class="bg-gray-50">
@@ -257,7 +230,7 @@ include '../../includes/header.php';
                                     <?php foreach ($invoiceItems as $item): ?>
                                         <tr class="hover:bg-gray-25 transition-colors">
                                             <td class="py-3 px-6">
-                                                <div class="font-medium text-gray-900"><?php echo htmlspecialchars($item['description']); ?></div>
+                                                <div class="font-medium text-gray-900 break-words"><?php echo htmlspecialchars($item['description']); ?></div>
                                             </td>
                                             <td class="py-3 px-6 text-center text-gray-600 font-medium">
                                                 <?php echo number_format($item['quantity'], 2); ?>
@@ -295,23 +268,23 @@ include '../../includes/header.php';
                         </div>
                     </div>
 
-                    <!-- Mobile Card View -->
-                    <div class="md:hidden space-y-2">
+                    <!-- Mobile/Tablet Card View -->
+                    <div class="lg:hidden space-y-3">
                         <?php foreach ($invoiceItems as $item): ?>
-                            <div class="border border-gray-100 rounded-xl p-3 bg-gray-50">
-                                <div class="font-semibold text-gray-900 mb-2"><?php echo htmlspecialchars($item['description']); ?></div>
-                                <div class="grid grid-cols-3 gap-3 text-sm">
+                            <div class="border border-gray-100 rounded-xl p-3 md:p-4 bg-gray-50">
+                                <div class="font-semibold text-gray-900 mb-2 md:mb-3 text-sm md:text-base break-words"><?php echo htmlspecialchars($item['description']); ?></div>
+                                <div class="grid grid-cols-3 gap-3 text-xs md:text-sm">
                                     <div>
                                         <span class="text-gray-500 block mb-1">Quantity</span>
                                         <span class="font-semibold text-gray-900"><?php echo number_format($item['quantity'], 2); ?></span>
                                     </div>
                                     <div>
                                         <span class="text-gray-500 block mb-1">Unit Price</span>
-                                        <span class="font-semibold text-gray-900 currency-nowrap"><?php echo Helper::formatCurrency($item['unit_price']); ?></span>
+                                        <span class="font-semibold text-gray-900 currency-nowrap break-all"><?php echo Helper::formatCurrency($item['unit_price']); ?></span>
                                     </div>
                                     <div class="text-right">
                                         <span class="text-gray-500 block mb-1">Total</span>
-                                        <span class="font-bold text-gray-900 currency-nowrap"><?php echo Helper::formatCurrency($item['total_amount']); ?></span>
+                                        <span class="font-bold text-gray-900 currency-nowrap break-all"><?php echo Helper::formatCurrency($item['total_amount']); ?></span>
                                     </div>
                                 </div>
                             </div>
@@ -319,35 +292,35 @@ include '../../includes/header.php';
                         
                         <!-- Mobile Totals -->
                         <div class="border-t border-gray-200 pt-4 space-y-3">
-                            <div class="flex justify-between text-gray-600">
+                            <div class="flex justify-between text-gray-600 text-sm md:text-base">
                                 <span class="font-medium">Subtotal:</span>
-                                <span class="font-semibold currency-nowrap"><?php echo Helper::formatCurrency($invoice['subtotal']); ?></span>
+                                <span class="font-semibold currency-nowrap break-all"><?php echo Helper::formatCurrency($invoice['subtotal']); ?></span>
                             </div>
                             <?php if ($invoice['tax_rate'] > 0): ?>
-                                <div class="flex justify-between text-gray-600">
+                                <div class="flex justify-between text-gray-600 text-sm md:text-base">
                                     <span class="font-medium">Tax (<?php echo number_format($invoice['tax_rate'], 2); ?>%):</span>
-                                    <span class="font-semibold currency-nowrap"><?php echo Helper::formatCurrency($invoice['tax_amount']); ?></span>
+                                    <span class="font-semibold currency-nowrap break-all"><?php echo Helper::formatCurrency($invoice['tax_amount']); ?></span>
                                 </div>
                             <?php endif; ?>
-                            <div class="flex justify-between text-xl font-bold text-gray-900 pt-3 border-t border-gray-200">
+                            <div class="flex justify-between text-lg md:text-xl font-bold text-gray-900 pt-3 border-t border-gray-200">
                                 <span>Total:</span>
-                                <span class="text-blue-600 currency-nowrap"><?php echo Helper::formatCurrency($invoice['total_amount']); ?></span>
+                                <span class="text-blue-600 currency-nowrap break-all"><?php echo Helper::formatCurrency($invoice['total_amount']); ?></span>
                             </div>
                         </div>
                     </div>
                 <?php else: ?>
                     <!-- Empty State -->
-                    <div class="text-center py-12">
-                        <div class="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                            <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="text-center py-8 md:py-12">
+                        <div class="w-12 h-12 md:w-16 md:h-16 mx-auto mb-3 md:mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                            <svg class="w-6 h-6 md:w-8 md:h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
                             </svg>
                         </div>
-                        <h3 class="text-lg font-semibold text-gray-900 mb-2">No invoice items</h3>
-                        <p class="text-gray-600 mb-6">This invoice doesn't have any line items yet.</p>
+                        <h3 class="text-base md:text-lg font-semibold text-gray-900 mb-2">No invoice items</h3>
+                        <p class="text-gray-600 mb-4 md:mb-6 text-sm md:text-base">This invoice doesn't have any line items yet.</p>
                         <a href="<?php echo Helper::baseUrl('modules/invoices/edit.php?id=' . Helper::encryptId($invoice['id'])); ?>" 
-                           class="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                           class="inline-flex items-center px-4 md:px-6 py-2 md:py-3 bg-blue-600 text-white rounded-lg md:rounded-xl hover:bg-blue-700 transition-colors font-medium text-sm md:text-base">
+                            <svg class="w-4 h-4 md:w-5 md:h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                             </svg>
                             Add Items
@@ -359,48 +332,48 @@ include '../../includes/header.php';
 
         <!-- Notes Card -->
         <?php if (!empty($invoice['notes'])): ?>
-            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm">
-                <div class="p-6 border-b border-gray-50">
-                    <h2 class="text-xl font-bold text-gray-900">Notes</h2>
+            <div class="bg-white rounded-xl md:rounded-2xl border border-gray-100 shadow-sm">
+                <div class="p-4 md:p-6 border-b border-gray-50">
+                    <h2 class="text-lg md:text-xl font-bold text-gray-900">Notes</h2>
                 </div>
-                <div class="p-6">
-                    <div class="text-gray-700 whitespace-pre-line leading-relaxed"><?php echo htmlspecialchars($invoice['notes']); ?></div>
+                <div class="p-4 md:p-6">
+                    <div class="text-gray-700 whitespace-pre-line leading-relaxed text-sm md:text-base break-words"><?php echo htmlspecialchars($invoice['notes']); ?></div>
                 </div>
             </div>
         <?php endif; ?>
 
         <!-- Payment History Card -->
         <?php if (!empty($relatedPayments)): ?>
-            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm">
-                <div class="p-6 border-b border-gray-50">
-                    <h2 class="text-xl font-bold text-gray-900">Payment History</h2>
+            <div class="bg-white rounded-xl md:rounded-2xl border border-gray-100 shadow-sm">
+                <div class="p-4 md:p-6 border-b border-gray-50">
+                    <h2 class="text-lg md:text-xl font-bold text-gray-900">Payment History</h2>
                 </div>
-                <div class="p-6">
-                    <div class="space-y-4">
+                <div class="p-4 md:p-6">
+                    <div class="space-y-3 md:space-y-4">
                         <?php foreach ($relatedPayments as $payment): ?>
-                            <div class="flex items-start justify-between p-5 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-100 rounded-xl">
-                                <div class="flex-1 min-w-0">
-                                    <div class="flex items-center space-x-3 mb-2">
-                                        <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                                            <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between p-4 md:p-5 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-100 rounded-lg md:rounded-xl">
+                                <div class="flex-1 min-w-0 mb-3 sm:mb-0">
+                                    <div class="flex items-center space-x-2 md:space-x-3 mb-2">
+                                        <div class="w-6 h-6 md:w-8 md:h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                            <svg class="w-3 h-3 md:w-4 md:h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                             </svg>
                                         </div>
-                                        <span class="font-semibold text-green-800">Payment Received</span>
+                                        <span class="font-semibold text-green-800 text-sm md:text-base">Payment Received</span>
                                     </div>
-                                    <div class="text-sm text-green-700 space-y-1 ml-11">
+                                    <div class="text-xs md:text-sm text-green-700 space-y-1 ml-8 md:ml-11">
                                         <p><span class="font-medium">Date:</span> <?php echo Helper::formatDate($payment['payment_date'], 'F j, Y'); ?></p>
                                         <p><span class="font-medium">Method:</span> <?php echo ucwords(str_replace('_', ' ', $payment['payment_method'])); ?></p>
                                         <?php if ($payment['payment_reference']): ?>
-                                            <p><span class="font-medium">Reference:</span> <?php echo htmlspecialchars($payment['payment_reference']); ?></p>
+                                            <p class="break-words"><span class="font-medium">Reference:</span> <?php echo htmlspecialchars($payment['payment_reference']); ?></p>
                                         <?php endif; ?>
                                         <?php if ($payment['notes']): ?>
-                                            <p><span class="font-medium">Notes:</span> <?php echo htmlspecialchars($payment['notes']); ?></p>
+                                            <p class="break-words"><span class="font-medium">Notes:</span> <?php echo htmlspecialchars($payment['notes']); ?></p>
                                         <?php endif; ?>
                                     </div>
                                 </div>
-                                <div class="text-right ml-6">
-                                    <p class="text-2xl font-bold text-green-700 currency-nowrap">
+                                <div class="text-right sm:ml-6 flex-shrink-0">
+                                    <p class="text-lg md:text-2xl font-bold text-green-700 currency-nowrap break-all">
                                         <?php echo Helper::formatCurrency($payment['payment_amount']); ?>
                                     </p>
                                     <p class="text-xs text-green-600 font-medium">
@@ -416,50 +389,50 @@ include '../../includes/header.php';
     </div>
 
     <!-- Right Column (Sidebar) -->
-    <div class="lg:col-span-1 space-y-6">
+    <div class="xl:col-span-1 space-y-4 md:space-y-6">
         
         <!-- Payment Summary Card -->
-        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm sticky top-6">
-            <div class="p-6 border-b border-gray-50">
-                <h3 class="text-lg font-bold text-gray-900">Payment Summary</h3>
+        <div class="bg-white rounded-xl md:rounded-2xl border border-gray-100 shadow-sm xl:sticky xl:top-6">
+            <div class="p-4 md:p-6 border-b border-gray-50">
+                <h3 class="text-base md:text-lg font-bold text-gray-900">Payment Summary</h3>
             </div>
-            <div class="p-6 space-y-4">
+            <div class="p-4 md:p-6 space-y-3 md:space-y-4">
                 <div class="flex justify-between items-center">
-                    <span class="text-gray-600 font-medium">Subtotal</span>
-                    <span class="font-bold text-gray-900 currency-nowrap"><?php echo Helper::formatCurrency($invoice['subtotal']); ?></span>
+                    <span class="text-gray-600 font-medium text-sm md:text-base">Subtotal</span>
+                    <span class="font-bold text-gray-900 currency-nowrap text-sm md:text-base break-all"><?php echo Helper::formatCurrency($invoice['subtotal']); ?></span>
                 </div>
                 <?php if ($invoice['tax_rate'] > 0): ?>
                     <div class="flex justify-between items-center">
-                        <span class="text-gray-600 font-medium">Tax (<?php echo number_format($invoice['tax_rate'], 2); ?>%)</span>
-                        <span class="font-bold text-gray-900 currency-nowrap"><?php echo Helper::formatCurrency($invoice['tax_amount']); ?></span>
+                        <span class="text-gray-600 font-medium text-sm md:text-base">Tax (<?php echo number_format($invoice['tax_rate'], 2); ?>%)</span>
+                        <span class="font-bold text-gray-900 currency-nowrap text-sm md:text-base break-all"><?php echo Helper::formatCurrency($invoice['tax_amount']); ?></span>
                     </div>
                 <?php endif; ?>
-                <div class="border-t border-gray-100 pt-4">
-                    <div class="flex justify-between items-center mb-4">
-                        <span class="text-lg font-bold text-gray-900">Total Amount</span>
-                        <span class="text-2xl font-bold text-blue-600 currency-nowrap"><?php echo Helper::formatCurrency($invoice['total_amount']); ?></span>
+                <div class="border-t border-gray-100 pt-3 md:pt-4">
+                    <div class="flex justify-between items-center mb-3 md:mb-4">
+                        <span class="text-base md:text-lg font-bold text-gray-900">Total Amount</span>
+                        <span class="text-lg md:text-2xl font-bold text-blue-600 currency-nowrap break-all"><?php echo Helper::formatCurrency($invoice['total_amount']); ?></span>
                     </div>
-                    <div class="flex justify-between items-center mb-4">
-                        <span class="text-gray-600 font-medium">Paid Amount</span>
-                        <span class="font-bold text-green-600 currency-nowrap"><?php echo Helper::formatCurrency($invoice['paid_amount']); ?></span>
+                    <div class="flex justify-between items-center mb-3 md:mb-4">
+                        <span class="text-gray-600 font-medium text-sm md:text-base">Paid Amount</span>
+                        <span class="font-bold text-green-600 currency-nowrap text-sm md:text-base break-all"><?php echo Helper::formatCurrency($invoice['paid_amount']); ?></span>
                     </div>
                     <?php if ($invoice['balance_amount'] > 0): ?>
                         <div class="flex justify-between items-center">
-                            <span class="text-lg font-bold text-red-600">Balance Due</span>
-                            <span class="text-xl font-bold text-red-600 currency-nowrap"><?php echo Helper::formatCurrency($invoice['balance_amount']); ?></span>
+                            <span class="text-base md:text-lg font-bold text-red-600">Balance Due</span>
+                            <span class="text-lg md:text-xl font-bold text-red-600 currency-nowrap break-all"><?php echo Helper::formatCurrency($invoice['balance_amount']); ?></span>
                         </div>
                     <?php endif; ?>
                 </div>
 
                 <!-- Payment Progress -->
                 <?php if ($invoice['total_amount'] > 0): ?>
-                    <div class="pt-4 border-t border-gray-100">
-                        <div class="flex justify-between text-sm text-gray-600 mb-2">
+                    <div class="pt-3 md:pt-4 border-t border-gray-100">
+                        <div class="flex justify-between text-xs md:text-sm text-gray-600 mb-2">
                             <span class="font-medium">Payment Progress</span>
                             <span class="font-semibold"><?php echo round(($invoice['paid_amount'] / $invoice['total_amount']) * 100); ?>%</span>
                         </div>
-                        <div class="w-full bg-gray-100 rounded-full h-3">
-                            <div class="bg-gradient-to-r from-green-500 to-green-600 h-3 rounded-full transition-all duration-500" 
+                        <div class="w-full bg-gray-100 rounded-full h-2 md:h-3">
+                            <div class="bg-gradient-to-r from-green-500 to-green-600 h-2 md:h-3 rounded-full transition-all duration-500" 
                                  style="width: <?php echo min(($invoice['paid_amount'] / $invoice['total_amount']) * 100, 100); ?>%"></div>
                         </div>
                     </div>

@@ -17,12 +17,12 @@ $database = new Database();
 $db = $database->getConnection();
 
 try {
-    // Get incomplete projects (pending + in_progress)
+    // 1. Get incomplete projects (pending + in_progress)
     $stmt = $db->prepare("SELECT COUNT(*) as count FROM projects WHERE status IN ('pending', 'in_progress')");
     $stmt->execute();
     $incompleteProjects = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
     
-    // Get this month's revenue (from payments made this month)
+    // 2. Get this month's CASH RECEIVED (payments received this month)
     $stmt = $db->prepare("
         SELECT COALESCE(SUM(payment_amount), 0) as total 
         FROM payments 
@@ -30,9 +30,9 @@ try {
         AND MONTH(payment_date) = MONTH(CURDATE())
     ");
     $stmt->execute();
-    $thisMonthRevenue = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+    $thisMonthCashReceived = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
     
-    // Get last month's revenue
+    // 3. Get last month's CASH RECEIVED
     $stmt = $db->prepare("
         SELECT COALESCE(SUM(payment_amount), 0) as total 
         FROM payments 
@@ -40,27 +40,79 @@ try {
         AND MONTH(payment_date) = MONTH(CURDATE() - INTERVAL 1 MONTH)
     ");
     $stmt->execute();
-    $lastMonthRevenue = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+    $lastMonthCashReceived = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
     
-    // Calculate revenue growth percentage
-    $revenueGrowth = $lastMonthRevenue > 0 ? (($thisMonthRevenue - $lastMonthRevenue) / $lastMonthRevenue * 100) : 0;
+    // 4. Calculate cash flow growth percentage
+    $cashFlowGrowth = $lastMonthCashReceived > 0 ? (($thisMonthCashReceived - $lastMonthCashReceived) / $lastMonthCashReceived * 100) : 0;
     
-    // Get total revenue (all time)
+    // 5. Get total CASH RECEIVED (all time)
     $stmt = $db->prepare("SELECT COALESCE(SUM(payment_amount), 0) as total FROM payments");
     $stmt->execute();
-    $totalRevenue = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+    $totalCashReceived = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
     
-    // Get pending payments (invoices with outstanding balance)
+    // 6. Get CURRENT outstanding balance (all unpaid invoices)
     $stmt = $db->prepare("SELECT COALESCE(SUM(balance_amount), 0) as total FROM invoices WHERE balance_amount > 0");
     $stmt->execute();
-    $pendingPayments = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+    $currentOutstanding = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
     
-    // Get overdue invoices count
+    // 7. Get overdue invoices count
     $stmt = $db->prepare("SELECT COUNT(*) as count FROM invoices WHERE due_date < CURDATE() AND balance_amount > 0");
     $stmt->execute();
     $overdueInvoices = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
     
-    // Get recent invoices (last 5)
+    // 8. Get this month's INVOICING ACTIVITY
+    $stmt = $db->prepare("
+        SELECT 
+            COUNT(*) as invoices_issued,
+            COALESCE(SUM(total_amount), 0) as total_invoiced
+        FROM invoices 
+        WHERE YEAR(invoice_date) = YEAR(CURDATE()) 
+        AND MONTH(invoice_date) = MONTH(CURDATE())
+    ");
+    $stmt->execute();
+    $thisMonthInvoicing = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    // 9. Get last month's INVOICING ACTIVITY
+    $stmt = $db->prepare("
+        SELECT 
+            COUNT(*) as invoices_issued,
+            COALESCE(SUM(total_amount), 0) as total_invoiced
+        FROM invoices 
+        WHERE YEAR(invoice_date) = YEAR(CURDATE() - INTERVAL 1 MONTH) 
+        AND MONTH(invoice_date) = MONTH(CURDATE() - INTERVAL 1 MONTH)
+    ");
+    $stmt->execute();
+    $lastMonthInvoicing = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    // 10. Get this month's EXPENSES
+    $stmt = $db->prepare("
+        SELECT 
+            COUNT(*) as expense_count,
+            COALESCE(SUM(amount), 0) as total_expenses
+        FROM expenses 
+        WHERE YEAR(expense_date) = YEAR(CURDATE()) 
+        AND MONTH(expense_date) = MONTH(CURDATE())
+    ");
+    $stmt->execute();
+    $thisMonthExpenses = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    // 11. Get last month's EXPENSES
+    $stmt = $db->prepare("
+        SELECT 
+            COUNT(*) as expense_count,
+            COALESCE(SUM(amount), 0) as total_expenses
+        FROM expenses 
+        WHERE YEAR(expense_date) = YEAR(CURDATE() - INTERVAL 1 MONTH) 
+        AND MONTH(expense_date) = MONTH(CURDATE() - INTERVAL 1 MONTH)
+    ");
+    $stmt->execute();
+    $lastMonthExpenses = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    // 12. Calculate NET CASH FLOW
+    $thisMonthNetCashFlow = $thisMonthCashReceived - $thisMonthExpenses['total_expenses'];
+    $lastMonthNetCashFlow = $lastMonthCashReceived - $lastMonthExpenses['total_expenses'];
+    
+    // 13. Get recent invoices (last 5)
     $stmt = $db->prepare("
         SELECT i.*, c.company_name 
         FROM invoices i 
@@ -71,7 +123,7 @@ try {
     $stmt->execute();
     $recentInvoices = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    // Get recent projects (last 5)
+    // 14. Get recent projects (last 5)
     $stmt = $db->prepare("
         SELECT p.*, c.company_name 
         FROM projects p 
@@ -82,7 +134,7 @@ try {
     $stmt->execute();
     $recentProjects = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    // Get recent payments (last 5)
+    // 15. Get recent payments (last 5)
     $stmt = $db->prepare("
         SELECT p.*, i.invoice_number, c.company_name 
         FROM payments p
@@ -94,52 +146,74 @@ try {
     $stmt->execute();
     $recentPayments = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    // Get this month's project revenue
+    // 16. Get key business metrics
     $stmt = $db->prepare("
-        SELECT COALESCE(SUM(total_amount), 0) as total 
-        FROM projects 
-        WHERE YEAR(created_at) = YEAR(CURDATE()) 
-        AND MONTH(created_at) = MONTH(CURDATE())
-        AND status = 'completed'
+        SELECT 
+            COUNT(DISTINCT c.id) as total_clients,
+            COUNT(DISTINCT p.id) as total_projects,
+            COUNT(DISTINCT i.id) as total_invoices
+        FROM clients c
+        LEFT JOIN projects p ON c.id = p.client_id
+        LEFT JOIN invoices i ON c.id = i.client_id
+        WHERE c.is_active = 1
     ");
     $stmt->execute();
-    $thisMonthProjects = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+    $businessMetrics = $stmt->fetch(PDO::FETCH_ASSOC);
     
-    // Get this month's outstanding invoices
+    // 17. Get urgent items (overdue invoices, due soon)
     $stmt = $db->prepare("
-        SELECT COALESCE(SUM(balance_amount), 0) as total 
-        FROM invoices 
-        WHERE YEAR(created_at) = YEAR(CURDATE()) 
-        AND MONTH(created_at) = MONTH(CURDATE())
-        AND balance_amount > 0
+        SELECT 
+            i.invoice_number,
+            i.total_amount,
+            i.balance_amount,
+            i.due_date,
+            c.company_name,
+            DATEDIFF(CURDATE(), i.due_date) as days_overdue
+        FROM invoices i
+        JOIN clients c ON i.client_id = c.id
+        WHERE i.balance_amount > 0 
+        AND (i.due_date < CURDATE() OR DATEDIFF(i.due_date, CURDATE()) <= 7)
+        ORDER BY i.due_date ASC
+        LIMIT 5
     ");
     $stmt->execute();
-    $thisMonthOutstanding = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+    $urgentInvoices = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    // Get last month's project revenue
+    // 18. Calculate collection rate
     $stmt = $db->prepare("
-        SELECT COALESCE(SUM(total_amount), 0) as total 
-        FROM projects 
-        WHERE YEAR(created_at) = YEAR(CURDATE() - INTERVAL 1 MONTH) 
-        AND MONTH(created_at) = MONTH(CURDATE() - INTERVAL 1 MONTH)
-        AND status = 'completed'
+        SELECT 
+            COALESCE(SUM(total_amount), 0) as total_invoiced,
+            COALESCE(SUM(paid_amount), 0) as total_collected
+        FROM invoices
     ");
     $stmt->execute();
-    $lastMonthProjects = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
-    
-    // Get last month's outstanding invoices
-    $stmt = $db->prepare("
-        SELECT COALESCE(SUM(balance_amount), 0) as total 
-        FROM invoices 
-        WHERE YEAR(created_at) = YEAR(CURDATE() - INTERVAL 1 MONTH) 
-        AND MONTH(created_at) = MONTH(CURDATE() - INTERVAL 1 MONTH)
-        AND balance_amount > 0
-    ");
-    $stmt->execute();
-    $lastMonthOutstanding = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+    $collectionData = $stmt->fetch(PDO::FETCH_ASSOC);
+    $collectionRate = $collectionData['total_invoiced'] > 0 
+        ? ($collectionData['total_collected'] / $collectionData['total_invoiced']) * 100 
+        : 0;
     
 } catch (Exception $e) {
     $error = "Error loading dashboard data: " . $e->getMessage();
+    // Set default values to prevent errors
+    $incompleteProjects = 0;
+    $thisMonthCashReceived = 0;
+    $lastMonthCashReceived = 0;
+    $cashFlowGrowth = 0;
+    $totalCashReceived = 0;
+    $currentOutstanding = 0;
+    $overdueInvoices = 0;
+    $thisMonthInvoicing = ['invoices_issued' => 0, 'total_invoiced' => 0];
+    $lastMonthInvoicing = ['invoices_issued' => 0, 'total_invoiced' => 0];
+    $thisMonthExpenses = ['expense_count' => 0, 'total_expenses' => 0];
+    $lastMonthExpenses = ['expense_count' => 0, 'total_expenses' => 0];
+    $thisMonthNetCashFlow = 0;
+    $lastMonthNetCashFlow = 0;
+    $recentInvoices = [];
+    $recentProjects = [];
+    $recentPayments = [];
+    $businessMetrics = ['total_clients' => 0, 'total_projects' => 0, 'total_invoices' => 0];
+    $urgentInvoices = [];
+    $collectionRate = 0;
 }
 
 include '../../includes/header.php';
@@ -152,22 +226,27 @@ include '../../includes/header.php';
             <h1 class="text-xl sm:text-2xl font-bold text-gray-900">Dashboard</h1>
             <p class="text-gray-600 mt-1 text-sm sm:text-base">Welcome back, <?php echo htmlspecialchars($_SESSION['user_name']); ?>!</p>
         </div>
-        <div class="mt-2 sm:mt-0">
-            <p class="text-xs sm:text-sm text-gray-500">
-                <?php echo date('M j, Y'); ?>
-            </p>
+        <div class="mt-2 sm:mt-0 flex items-center gap-4">
+            <div class="text-right">
+                <p class="text-xs sm:text-sm text-gray-500">
+                    <?php echo date('M j, Y'); ?>
+                </p>
+                <p class="text-xs text-gray-400">
+                    Last updated: <?php echo date('g:i A'); ?>
+                </p>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Key Metrics Grid -->
+<!-- Key Performance Indicators -->
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
-    <!-- Incomplete Projects -->
+    <!-- Active Projects -->
     <div class="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 border border-gray-200 hover:shadow-md transition-shadow">
         <div class="flex items-center justify-between">
-            <div class="w-8 h-8 sm:w-10 sm:h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                <svg class="w-4 h-4 sm:w-5 sm:h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            <div class="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                <svg class="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
                 </svg>
             </div>
             <?php if ($overdueInvoices > 0): ?>
@@ -178,73 +257,199 @@ include '../../includes/header.php';
         </div>
         <div class="mt-2 sm:mt-3">
             <p class="text-lg sm:text-2xl font-bold text-gray-900"><?php echo number_format($incompleteProjects); ?></p>
-            <p class="text-xs sm:text-sm text-gray-600">Projects In Progress</p>
+            <p class="text-xs sm:text-sm text-gray-600">Active Projects</p>
         </div>
     </div>
 
-    <!-- This Month Revenue -->
+    <!-- This Month Cash Received -->
     <div class="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 border border-gray-200 hover:shadow-md transition-shadow">
         <div class="flex items-center justify-between">
             <div class="w-8 h-8 sm:w-10 sm:h-10 bg-green-100 rounded-lg flex items-center justify-center">
                 <svg class="w-4 h-4 sm:w-5 sm:h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
                 </svg>
             </div>
-            <?php if ($revenueGrowth != 0): ?>
-                <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium <?php echo $revenueGrowth > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'; ?>">
-                    <?php echo $revenueGrowth > 0 ? '+' : ''; ?><?php echo number_format($revenueGrowth, 1); ?>%
+            <?php if ($cashFlowGrowth != 0): ?>
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium <?php echo $cashFlowGrowth > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'; ?>">
+                    <?php echo $cashFlowGrowth > 0 ? '+' : ''; ?><?php echo number_format($cashFlowGrowth, 1); ?>%
                 </span>
             <?php endif; ?>
         </div>
         <div class="mt-2 sm:mt-3">
-            <p class="text-sm sm:text-lg font-bold text-gray-900"><?php echo Helper::formatCurrency($thisMonthRevenue); ?></p>
-            <p class="text-xs sm:text-sm text-gray-600">This Month</p>
+            <p class="text-sm sm:text-lg font-bold text-gray-900">LKR <?php echo number_format($thisMonthCashReceived, 0); ?></p>
+            <p class="text-xs sm:text-sm text-gray-600">Cash Received</p>
         </div>
     </div>
 
-    <!-- Last Month Revenue -->
+    <!-- Net Cash Flow -->
     <div class="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 border border-gray-200 hover:shadow-md transition-shadow">
-        <div class="flex items-center">
-            <div class="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <svg class="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+        <div class="flex items-center justify-between">
+            <div class="w-8 h-8 sm:w-10 sm:h-10 <?php echo $thisMonthNetCashFlow >= 0 ? 'bg-green-100' : 'bg-red-100'; ?> rounded-lg flex items-center justify-center">
+                <svg class="w-4 h-4 sm:w-5 sm:h-5 <?php echo $thisMonthNetCashFlow >= 0 ? 'text-green-600' : 'text-red-600'; ?>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2-2V9a2 2 0 002-2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                 </svg>
             </div>
         </div>
         <div class="mt-2 sm:mt-3">
-            <p class="text-sm sm:text-lg font-bold text-gray-900"><?php echo Helper::formatCurrency($lastMonthRevenue); ?></p>
-            <p class="text-xs sm:text-sm text-gray-600">Last Month</p>
+            <p class="text-sm sm:text-lg font-bold <?php echo $thisMonthNetCashFlow >= 0 ? 'text-green-600' : 'text-red-600'; ?>">
+                LKR <?php echo number_format($thisMonthNetCashFlow, 0); ?>
+            </p>
+            <p class="text-xs sm:text-sm text-gray-600">Net Cash Flow</p>
         </div>
     </div>
 
-    <!-- Pending Payments -->
+    <!-- Outstanding Balance -->
     <div class="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 border border-gray-200 hover:shadow-md transition-shadow">
-        <div class="flex items-center">
-            <div class="w-8 h-8 sm:w-10 sm:h-10 bg-amber-100 rounded-lg flex items-center justify-center">
-                <svg class="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="flex items-center justify-between">
+            <div class="w-8 h-8 sm:w-10 sm:h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                <svg class="w-4 h-4 sm:w-5 sm:h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
             </div>
         </div>
         <div class="mt-2 sm:mt-3">
-            <p class="text-sm sm:text-lg font-bold text-gray-900"><?php echo Helper::formatCurrency($pendingPayments); ?></p>
+            <p class="text-sm sm:text-lg font-bold text-gray-900">LKR <?php echo number_format($currentOutstanding, 0); ?></p>
             <p class="text-xs sm:text-sm text-gray-600">Outstanding</p>
         </div>
     </div>
 </div>
 
-<!-- Quick Actions -->
-<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6 sm:mb-8">
-    <a href="<?php echo Helper::baseUrl('modules/clients/add.php'); ?>" 
-       class="bg-white rounded-lg p-3 border border-gray-200 hover:shadow-md hover:border-blue-300 transition-all text-center group">
-        <div class="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center mx-auto mb-2 group-hover:bg-blue-100 transition-colors">
-            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+<!-- Business Overview -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+    <!-- Monthly Comparison -->
+    <div class="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 lg:col-span-2">
+        <div class="mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">Monthly Performance</h3>
+            <p class="text-sm text-gray-600">Cash flow comparison</p>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-4">
+            <!-- This Month -->
+            <div class="text-center">
+                <h4 class="text-sm font-medium text-gray-700 mb-2"><?php echo date('F Y'); ?></h4>
+                <div class="space-y-2">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">Cash In:</span>
+                        <span class="font-medium text-green-600">LKR <?php echo number_format($thisMonthCashReceived, 0); ?></span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">Invoiced:</span>
+                        <span class="font-medium">LKR <?php echo number_format($thisMonthInvoicing['total_invoiced'], 0); ?></span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">Expenses:</span>
+                        <span class="font-medium text-red-600">LKR <?php echo number_format($thisMonthExpenses['total_expenses'], 0); ?></span>
+                    </div>
+                    <div class="pt-2 border-t border-gray-100">
+                        <div class="flex justify-between text-sm font-semibold">
+                            <span>Net Cash Flow:</span>
+                            <span class="<?php echo $thisMonthNetCashFlow >= 0 ? 'text-green-600' : 'text-red-600'; ?>">
+                                LKR <?php echo number_format($thisMonthNetCashFlow, 0); ?>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Last Month -->
+            <div class="text-center">
+                <h4 class="text-sm font-medium text-gray-700 mb-2"><?php echo date('F Y', strtotime('-1 month')); ?></h4>
+                <div class="space-y-2">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">Cash In:</span>
+                        <span class="font-medium text-green-600">LKR <?php echo number_format($lastMonthCashReceived, 0); ?></span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">Invoiced:</span>
+                        <span class="font-medium">LKR <?php echo number_format($lastMonthInvoicing['total_invoiced'], 0); ?></span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">Expenses:</span>
+                        <span class="font-medium text-red-600">LKR <?php echo number_format($lastMonthExpenses['total_expenses'], 0); ?></span>
+                    </div>
+                    <div class="pt-2 border-t border-gray-100">
+                        <div class="flex justify-between text-sm font-semibold">
+                            <span>Net Cash Flow:</span>
+                            <span class="<?php echo $lastMonthNetCashFlow >= 0 ? 'text-green-600' : 'text-red-600'; ?>">
+                                LKR <?php echo number_format($lastMonthNetCashFlow, 0); ?>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Key Metrics -->
+    <div class="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
+        <div class="mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">Key Metrics</h3>
+        </div>
+        
+        <div class="space-y-4">
+            <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-600">Collection Rate</span>
+                <span class="text-sm font-semibold text-blue-600"><?php echo number_format($collectionRate, 1); ?>%</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-600">Total Clients</span>
+                <span class="text-sm font-semibold"><?php echo number_format($businessMetrics['total_clients']); ?></span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-600">Total Projects</span>
+                <span class="text-sm font-semibold"><?php echo number_format($businessMetrics['total_projects']); ?></span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-600">Total Invoices</span>
+                <span class="text-sm font-semibold"><?php echo number_format($businessMetrics['total_invoices']); ?></span>
+            </div>
+            <div class="pt-2 border-t border-gray-100">
+                <div class="flex justify-between items-center">
+                    <span class="text-sm font-medium text-gray-900">Lifetime Revenue</span>
+                    <span class="text-sm font-bold text-gray-900">LKR <?php echo number_format($totalCashReceived, 0); ?></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Urgent Items Alert -->
+<?php if (!empty($urgentInvoices)): ?>
+<div class="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
+    <div class="flex">
+        <div class="flex-shrink-0">
+            <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
             </svg>
         </div>
-        <p class="text-xs font-medium text-gray-900 group-hover:text-blue-600 transition-colors">Add Client</p>
-    </a>
+        <div class="ml-3">
+            <h3 class="text-sm font-medium text-red-800">Urgent: Overdue Invoices</h3>
+            <div class="mt-2 text-sm text-red-700">
+                <ul class="list-disc list-inside space-y-1">
+                    <?php foreach (array_slice($urgentInvoices, 0, 3) as $urgent): ?>
+                        <li>
+                            <?php echo htmlspecialchars($urgent['company_name']); ?> - 
+                            Invoice #<?php echo htmlspecialchars($urgent['invoice_number']); ?> 
+                            (LKR <?php echo number_format($urgent['balance_amount'], 0); ?>) - 
+                            <?php if ($urgent['days_overdue'] > 0): ?>
+                                <?php echo $urgent['days_overdue']; ?> days overdue
+                            <?php else: ?>
+                                Due in <?php echo abs($urgent['days_overdue']); ?> days
+                            <?php endif; ?>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+                <?php if (count($urgentInvoices) > 3): ?>
+                    <p class="mt-2">And <?php echo count($urgentInvoices) - 3; ?> more urgent items...</p>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 
+<!-- Quick Actions -->
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6 sm:mb-8">
     <a href="<?php echo Helper::baseUrl('modules/projects/add.php'); ?>" 
        class="bg-white rounded-lg p-3 border border-gray-200 hover:shadow-md hover:border-green-300 transition-all text-center group">
         <div class="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center mx-auto mb-2 group-hover:bg-green-100 transition-colors">
@@ -274,129 +479,6 @@ include '../../includes/header.php';
         </div>
         <p class="text-xs font-medium text-gray-900 group-hover:text-emerald-600 transition-colors">Add Payment</p>
     </a>
-</div>
-
-<!-- Financial Overview Charts -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
-    <!-- This Month Chart -->
-    <div class="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
-        <div class="mb-4">
-            <h3 class="text-lg font-semibold text-gray-900">This Month</h3>
-            <p class="text-sm text-gray-600"><?php echo date('F Y'); ?></p>
-        </div>
-        
-        <?php 
-        $thisMonthTotal = $thisMonthRevenue + $thisMonthProjects + $thisMonthOutstanding;
-        $thisMonthHasData = $thisMonthTotal > 0;
-        ?>
-        
-        <?php if (!$thisMonthHasData): ?>
-            <div class="flex flex-col items-center justify-center py-8">
-                <div class="w-32 h-32 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                    <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                    </svg>
-                </div>
-                <p class="text-gray-500 text-center font-medium">No Data Available</p>
-                <p class="text-gray-400 text-sm text-center mt-1">No payments or projects this month</p>
-            </div>
-        <?php else: ?>
-            <div class="flex flex-col sm:flex-row items-center">
-                <div class="w-48 h-48 sm:w-40 sm:h-40 lg:w-48 lg:h-48 mb-4 sm:mb-0 sm:mr-6">
-                    <canvas id="thisMonthChart" width="192" height="192"></canvas>
-                </div>
-                <div class="flex-1 space-y-3 w-full">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center">
-                            <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-                            <span class="text-sm text-gray-600">Payments</span>
-                        </div>
-                        <span class="text-sm font-medium"><?php echo Helper::formatCurrency($thisMonthRevenue); ?></span>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center">
-                            <div class="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
-                            <span class="text-sm text-gray-600">Projects</span>
-                        </div>
-                        <span class="text-sm font-medium"><?php echo Helper::formatCurrency($thisMonthProjects); ?></span>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center">
-                            <div class="w-3 h-3 bg-orange-500 rounded-full mr-2"></div>
-                            <span class="text-sm text-gray-600">Outstanding</span>
-                        </div>
-                        <span class="text-sm font-medium"><?php echo Helper::formatCurrency($thisMonthOutstanding); ?></span>
-                    </div>
-                    <div class="pt-2 border-t border-gray-100">
-                        <div class="flex items-center justify-between">
-                            <span class="text-sm font-medium text-gray-900">Total</span>
-                            <span class="text-sm font-bold text-gray-900"><?php echo Helper::formatCurrency($thisMonthTotal); ?></span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        <?php endif; ?>
-    </div>
-
-    <!-- Last Month Chart -->
-    <div class="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
-        <div class="mb-4">
-            <h3 class="text-lg font-semibold text-gray-900">Last Month</h3>
-            <p class="text-sm text-gray-600"><?php echo date('F Y', strtotime('-1 month')); ?></p>
-        </div>
-        
-        <?php 
-        $lastMonthTotal = $lastMonthRevenue + $lastMonthProjects + $lastMonthOutstanding;
-        $lastMonthHasData = $lastMonthTotal > 0;
-        ?>
-        
-        <?php if (!$lastMonthHasData): ?>
-            <div class="flex flex-col items-center justify-center py-8">
-                <div class="w-32 h-32 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                    <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                    </svg>
-                </div>
-                <p class="text-gray-500 text-center font-medium">No Data Available</p>
-                <p class="text-gray-400 text-sm text-center mt-1">No payments or projects last month</p>
-            </div>
-        <?php else: ?>
-            <div class="flex flex-col sm:flex-row items-center">
-                <div class="w-48 h-48 sm:w-40 sm:h-40 lg:w-48 lg:h-48 mb-4 sm:mb-0 sm:mr-6">
-                    <canvas id="lastMonthChart" width="192" height="192"></canvas>
-                </div>
-                <div class="flex-1 space-y-3 w-full">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center">
-                            <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-                            <span class="text-sm text-gray-600">Payments</span>
-                        </div>
-                        <span class="text-sm font-medium"><?php echo Helper::formatCurrency($lastMonthRevenue); ?></span>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center">
-                            <div class="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
-                            <span class="text-sm text-gray-600">Projects</span>
-                        </div>
-                        <span class="text-sm font-medium"><?php echo Helper::formatCurrency($lastMonthProjects); ?></span>
-                    </div>
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center">
-                            <div class="w-3 h-3 bg-orange-500 rounded-full mr-2"></div>
-                            <span class="text-sm text-gray-600">Outstanding</span>
-                        </div>
-                        <span class="text-sm font-medium"><?php echo Helper::formatCurrency($lastMonthOutstanding); ?></span>
-                    </div>
-                    <div class="pt-2 border-t border-gray-100">
-                        <div class="flex items-center justify-between">
-                            <span class="text-sm font-medium text-gray-900">Total</span>
-                            <span class="text-sm font-bold text-gray-900"><?php echo Helper::formatCurrency($lastMonthTotal); ?></span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        <?php endif; ?>
-    </div>
 </div>
 
 <!-- Recent Activity Tabs -->
@@ -439,7 +521,19 @@ include '../../includes/header.php';
                                     <p class="font-medium text-gray-900 text-sm">
                                         #<?php echo htmlspecialchars($invoice['invoice_number']); ?>
                                     </p>
-                                    <?php echo Helper::statusBadge($invoice['status']); ?>
+                                    <?php 
+                                    $statusClasses = [
+                                        'draft' => 'bg-gray-100 text-gray-800',
+                                        'sent' => 'bg-blue-100 text-blue-800',
+                                        'paid' => 'bg-green-100 text-green-800',
+                                        'partially_paid' => 'bg-orange-100 text-orange-800',
+                                        'overdue' => 'bg-red-100 text-red-800'
+                                    ];
+                                    $statusClass = $statusClasses[$invoice['status']] ?? 'bg-gray-100 text-gray-800';
+                                    ?>
+                                    <span class="px-2 py-0.5 rounded-full text-xs font-medium <?php echo $statusClass; ?>">
+                                        <?php echo ucfirst(str_replace('_', ' ', $invoice['status'])); ?>
+                                    </span>
                                 </div>
                                 <p class="text-xs text-gray-500 truncate">
                                     <?php echo htmlspecialchars($invoice['company_name']); ?>
@@ -447,7 +541,7 @@ include '../../includes/header.php';
                             </div>
                             <div class="text-right">
                                 <p class="text-sm font-medium text-gray-900">
-                                    <?php echo Helper::formatCurrency($invoice['total_amount']); ?>
+                                    LKR <?php echo number_format($invoice['total_amount'], 0); ?>
                                 </p>
                                 <p class="text-xs text-gray-500">
                                     Due: <?php echo date('M j', strtotime($invoice['due_date'])); ?>
@@ -485,7 +579,18 @@ include '../../includes/header.php';
                                     <p class="font-medium text-gray-900 text-sm truncate">
                                         <?php echo htmlspecialchars($project['project_name']); ?>
                                     </p>
-                                    <?php echo Helper::statusBadge($project['status']); ?>
+                                    <?php 
+                                    $statusClasses = [
+                                        'pending' => 'bg-yellow-100 text-yellow-800',
+                                        'in_progress' => 'bg-blue-100 text-blue-800',
+                                        'completed' => 'bg-green-100 text-green-800',
+                                        'cancelled' => 'bg-red-100 text-red-800'
+                                    ];
+                                    $statusClass = $statusClasses[$project['status']] ?? 'bg-gray-100 text-gray-800';
+                                    ?>
+                                    <span class="px-2 py-0.5 rounded-full text-xs font-medium <?php echo $statusClass; ?>">
+                                        <?php echo ucfirst(str_replace('_', ' ', $project['status'])); ?>
+                                    </span>
                                 </div>
                                 <p class="text-xs text-gray-500 truncate">
                                     <?php echo htmlspecialchars($project['company_name']); ?>
@@ -493,10 +598,10 @@ include '../../includes/header.php';
                             </div>
                             <div class="text-right">
                                 <p class="text-sm font-medium text-gray-900">
-                                    <?php echo Helper::formatCurrency($project['total_amount']); ?>
+                                    LKR <?php echo number_format($project['total_amount'], 0); ?>
                                 </p>
                                 <p class="text-xs text-gray-500">
-                                    <?php echo ucfirst($project['project_type']); ?>
+                                    <?php echo ucfirst(str_replace('_', ' ', $project['project_type'])); ?>
                                 </p>
                             </div>
                         </div>
@@ -541,7 +646,7 @@ include '../../includes/header.php';
                             </div>
                             <div class="text-right">
                                 <p class="text-sm font-medium text-gray-900">
-                                    <?php echo Helper::formatCurrency($payment['payment_amount']); ?>
+                                    LKR <?php echo number_format($payment['payment_amount'], 0); ?>
                                 </p>
                                 <p class="text-xs text-gray-500">
                                     <?php echo date('M j, Y', strtotime($payment['payment_date'])); ?>
@@ -551,13 +656,80 @@ include '../../includes/header.php';
                     <?php endforeach; ?>
                 </div>
                 <div class="mt-4 text-center">
-                    <a href="<?php echo Helper::baseUrl('modules/payments/create.php'); ?>" 
-                       class="text-sm text-blue-600 hover:text-blue-700 font-medium">Add New Payment →</a>
+                    <a href="<?php echo Helper::baseUrl('modules/payments/'); ?>" 
+                       class="text-sm text-blue-600 hover:text-blue-700 font-medium">View All Payments →</a>
                 </div>
             <?php endif; ?>
         </div>
     </div>
 </div>
+
+<!-- Performance Insights -->
+<?php 
+$showInsights = $thisMonthCashReceived > 0 || $lastMonthCashReceived > 0 || $currentOutstanding > 0;
+?>
+<?php if ($showInsights): ?>
+<div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6 mb-6">
+    <h3 class="text-lg font-semibold text-gray-900 mb-4">Performance Insights</h3>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Cash Flow Trend -->
+        <div class="bg-white rounded-lg p-4 border border-blue-100">
+            <div class="flex items-center space-x-2 mb-2">
+                <div class="w-2 h-2 <?php echo $cashFlowGrowth >= 0 ? 'bg-green-400' : 'bg-red-400'; ?> rounded-full"></div>
+                <h4 class="text-sm font-medium text-gray-900">Cash Flow Trend</h4>
+            </div>
+            <p class="text-xs text-gray-600">
+                <?php if ($cashFlowGrowth > 10): ?>
+                    Excellent growth! Your cash receipts increased by <?php echo number_format($cashFlowGrowth, 1); ?>% this month.
+                <?php elseif ($cashFlowGrowth > 0): ?>
+                    Positive growth of <?php echo number_format($cashFlowGrowth, 1); ?>% in cash receipts.
+                <?php elseif ($cashFlowGrowth == 0): ?>
+                    Cash receipts remained stable compared to last month.
+                <?php else: ?>
+                    Cash receipts decreased by <?php echo number_format(abs($cashFlowGrowth), 1); ?>%. Consider following up on outstanding invoices.
+                <?php endif; ?>
+            </p>
+        </div>
+        
+        <!-- Collection Health -->
+        <div class="bg-white rounded-lg p-4 border border-blue-100">
+            <div class="flex items-center space-x-2 mb-2">
+                <div class="w-2 h-2 <?php echo $collectionRate >= 80 ? 'bg-green-400' : ($collectionRate >= 60 ? 'bg-yellow-400' : 'bg-red-400'); ?> rounded-full"></div>
+                <h4 class="text-sm font-medium text-gray-900">Collection Health</h4>
+            </div>
+            <p class="text-xs text-gray-600">
+                <?php if ($collectionRate >= 85): ?>
+                    Excellent collection rate of <?php echo number_format($collectionRate, 1); ?>%! Your payment collection is very healthy.
+                <?php elseif ($collectionRate >= 70): ?>
+                    Good collection rate of <?php echo number_format($collectionRate, 1); ?>%. Some room for improvement.
+                <?php elseif ($collectionRate >= 50): ?>
+                    Fair collection rate of <?php echo number_format($collectionRate, 1); ?>%. Consider improving follow-up processes.
+                <?php else: ?>
+                    Low collection rate of <?php echo number_format($collectionRate, 1); ?>%. Focus on payment follow-ups urgently.
+                <?php endif; ?>
+            </p>
+        </div>
+        
+        <!-- Outstanding Balance -->
+        <div class="bg-white rounded-lg p-4 border border-blue-100">
+            <div class="flex items-center space-x-2 mb-2">
+                <div class="w-2 h-2 <?php echo $overdueInvoices == 0 ? 'bg-green-400' : ($overdueInvoices <= 3 ? 'bg-yellow-400' : 'bg-red-400'); ?> rounded-full"></div>
+                <h4 class="text-sm font-medium text-gray-900">Outstanding Status</h4>
+            </div>
+            <p class="text-xs text-gray-600">
+                <?php if ($currentOutstanding == 0): ?>
+                    Perfect! No outstanding balances. All invoices are fully paid.
+                <?php elseif ($overdueInvoices == 0): ?>
+                    LKR <?php echo number_format($currentOutstanding, 0); ?> outstanding, but no overdue invoices. Good management!
+                <?php else: ?>
+                    LKR <?php echo number_format($currentOutstanding, 0); ?> outstanding with <?php echo $overdueInvoices; ?> overdue invoice(s). Follow up needed.
+                <?php endif; ?>
+            </p>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 
 <style>
 /* Mobile-first responsive styles */
@@ -624,10 +796,20 @@ a:focus {
 .transition-shadow {
     will-change: transform;
 }
+
+/* Pulse animation for urgent alerts */
+@keyframes pulse-red {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+}
+
+.pulse-red {
+    animation: pulse-red 2s infinite;
+}
 </style>
 
 <script>
-// Enhanced dashboard JavaScript with mobile optimizations
+// Enhanced dashboard JavaScript with improved functionality
 document.addEventListener('DOMContentLoaded', function() {
     // Tab switching functionality
     window.switchTab = function(tabName) {
@@ -661,7 +843,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Add number animation for metrics
-    function animateNumber(element, start, end, duration = 1000) {
+    function animateNumber(element, start, end, duration = 1200) {
         const range = end - start;
         const increment = range / (duration / 16);
         let current = start;
@@ -674,46 +856,55 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             // Format based on element content type
-            if (element.textContent.includes('$')) {
-                element.textContent = '$' + Math.floor(current).toLocaleString();
+            if (element.textContent.includes('LKR')) {
+                element.textContent = 'LKR ' + Math.floor(current).toLocaleString();
             } else {
                 element.textContent = Math.floor(current).toLocaleString();
             }
         }, 16);
     }
     
-    // Initialize number animations
-    const numberElements = document.querySelectorAll('.text-lg, .text-2xl');
-    numberElements.forEach(el => {
+    // Initialize number animations with staggered delays
+    const numberElements = document.querySelectorAll('.font-bold');
+    numberElements.forEach((el, index) => {
         const text = el.textContent.trim();
-        if (/^[\$\d,]+$/.test(text.replace(/\$|,/g, ''))) {
-            const finalNumber = parseInt(text.replace(/[\$,]/g, ''));
+        const numberMatch = text.match(/[\d,]+/);
+        if (numberMatch) {
+            const finalNumber = parseInt(numberMatch[0].replace(/,/g, ''));
             if (!isNaN(finalNumber) && finalNumber > 0) {
-                el.textContent = text.includes('$') ? '$0' : '0';
-                setTimeout(() => animateNumber(el, 0, finalNumber), 300);
+                const prefix = text.includes('LKR') ? 'LKR ' : '';
+                el.textContent = prefix + '0';
+                setTimeout(() => animateNumber(el, 0, finalNumber), 300 + (index * 100));
             }
         }
     });
     
-    // Add touch feedback for mobile devices
+    // Add pulse animation to urgent items
+    const urgentAlert = document.querySelector('.bg-red-50');
+    if (urgentAlert) {
+        urgentAlert.classList.add('pulse-red');
+    }
+    
+    // Enhanced touch feedback for mobile devices
     function addTouchFeedback() {
         const touchElements = document.querySelectorAll('a, button, [onclick]');
         
         touchElements.forEach(element => {
-            element.addEventListener('touchstart', function() {
+            element.addEventListener('touchstart', function(e) {
                 this.style.transform = 'scale(0.98)';
-                this.style.opacity = '0.8';
-            });
+                this.style.opacity = '0.9';
+                this.style.transition = 'all 0.1s ease';
+            }, { passive: true });
             
             element.addEventListener('touchend', function() {
                 this.style.transform = '';
                 this.style.opacity = '';
-            });
+            }, { passive: true });
             
             element.addEventListener('touchcancel', function() {
                 this.style.transform = '';
                 this.style.opacity = '';
-            });
+            }, { passive: true });
         });
     }
     
@@ -724,25 +915,37 @@ document.addEventListener('DOMContentLoaded', function() {
         
         let startX = 0;
         let startY = 0;
+        let isSwipeMove = false;
         const threshold = 50;
         
         tabContainer.addEventListener('touchstart', function(e) {
             startX = e.touches[0].clientX;
             startY = e.touches[0].clientY;
-        });
+            isSwipeMove = false;
+        }, { passive: true });
         
         tabContainer.addEventListener('touchmove', function(e) {
-            e.preventDefault(); // Prevent scrolling while swiping
-        });
+            if (!isSwipeMove) {
+                const diffX = Math.abs(e.touches[0].clientX - startX);
+                const diffY = Math.abs(e.touches[0].clientY - startY);
+                
+                if (diffX > diffY && diffX > 10) {
+                    isSwipeMove = true;
+                }
+            }
+            
+            if (isSwipeMove) {
+                e.preventDefault(); // Prevent scrolling while swiping
+            }
+        }, { passive: false });
         
         tabContainer.addEventListener('touchend', function(e) {
-            const endX = e.changedTouches[0].clientX;
-            const endY = e.changedTouches[0].clientY;
-            const diffX = startX - endX;
-            const diffY = startY - endY;
+            if (!isSwipeMove) return;
             
-            // Only process horizontal swipes
-            if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > threshold) {
+            const endX = e.changedTouches[0].clientX;
+            const diffX = startX - endX;
+            
+            if (Math.abs(diffX) > threshold) {
                 const tabs = ['invoices', 'projects', 'payments'];
                 const currentTab = localStorage.getItem('activeTab') || 'invoices';
                 const currentIndex = tabs.indexOf(currentTab);
@@ -755,7 +958,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     switchTab(tabs[currentIndex - 1]);
                 }
             }
-        });
+        }, { passive: true });
     }
     
     // Initialize mobile enhancements
@@ -764,57 +967,61 @@ document.addEventListener('DOMContentLoaded', function() {
         addSwipeGestures();
     }
     
-    // Auto-refresh dashboard data every 5 minutes
-    setInterval(function() {
-        // Only refresh if the page is visible
-        if (!document.hidden) {
-            // In production, you would make an AJAX call here
-            console.log('Auto-refreshing dashboard data...');
-            
-            // Example AJAX refresh (uncomment in production):
-            /*
-            fetch(window.location.href, {
-                method: 'GET',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                // Update metrics without page reload
-                updateDashboardMetrics(data);
-            })
-            .catch(error => console.log('Refresh failed:', error));
-            */
+    // Real-time updates (placeholder for WebSocket implementation)
+    function initializeRealTimeUpdates() {
+        // This would connect to a WebSocket server in production
+        console.log('Real-time updates initialized');
+        
+        // Example: Update metrics every 30 seconds
+        setInterval(function() {
+            if (!document.hidden) {
+                // In production, this would fetch updated data via AJAX/WebSocket
+                updateLastUpdatedTime();
+            }
+        }, 30000);
+    }
+    
+    function updateLastUpdatedTime() {
+        const timeElement = document.querySelector('.text-gray-400');
+        if (timeElement && timeElement.textContent.includes('Last updated:')) {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-US', { 
+                hour: 'numeric', 
+                minute: '2-digit',
+                hour12: true 
+            });
+            timeElement.textContent = `Last updated: ${timeString}`;
         }
-    }, 300000); // 5 minutes
+    }
+    
+    // Initialize enhanced features
+    initializeRealTimeUpdates();
     
     // Add loading states for better user experience
     function addLoadingStates() {
         const cards = document.querySelectorAll('.bg-white.rounded-lg, .bg-white.rounded-xl');
-        cards.forEach(card => {
-            card.style.opacity = '0';
-            card.style.transform = 'translateY(10px)';
-        });
-        
-        // Animate cards in with stagger effect
         cards.forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            
             setTimeout(() => {
-                card.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                card.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
                 card.style.opacity = '1';
                 card.style.transform = 'translateY(0)';
-            }, index * 100);
+            }, index * 50);
         });
     }
     
-    // Initialize loading animations
     addLoadingStates();
     
-    // Handle connection status for offline experience
+    // Enhanced error handling and offline support
     function handleConnectionStatus() {
-        const showStatus = (message, type) => {
+        const showConnectionStatus = (message, type) => {
+            const existingStatus = document.querySelector('.connection-status');
+            if (existingStatus) existingStatus.remove();
+            
             const statusDiv = document.createElement('div');
-            statusDiv.className = `fixed top-4 right-4 px-4 py-2 rounded-lg text-white text-sm z-50 ${
+            statusDiv.className = `connection-status fixed top-4 right-4 px-4 py-2 rounded-lg text-white text-sm z-50 shadow-lg ${
                 type === 'offline' ? 'bg-red-500' : 'bg-green-500'
             }`;
             statusDiv.textContent = message;
@@ -822,185 +1029,336 @@ document.addEventListener('DOMContentLoaded', function() {
             
             setTimeout(() => {
                 statusDiv.remove();
-            }, 3000);
+            }, 5000);
         };
         
         window.addEventListener('online', () => {
-            showStatus('Connection restored', 'online');
+            showConnectionStatus('Connection restored', 'online');
+            updateLastUpdatedTime();
         });
         
         window.addEventListener('offline', () => {
-            showStatus('Working offline', 'offline');
+            showConnectionStatus('Working offline', 'offline');
         });
     }
     
     handleConnectionStatus();
     
-    // Performance monitoring
-    if ('performance' in window) {
-        window.addEventListener('load', function() {
-            const loadTime = performance.timing.loadEventEnd - performance.timing.navigationStart;
-            console.log('Dashboard loaded in:', loadTime + 'ms');
+    // Advanced dashboard features
+    function initializeDashboardFeatures() {
+        // Add click-to-refresh for metrics
+        const metricCards = document.querySelectorAll('[class*="grid-cols-2"] > div');
+        metricCards.forEach(card => {
+            card.addEventListener('dblclick', function() {
+                // In production, this would refresh the specific metric
+                this.classList.add('metric-loading');
+                setTimeout(() => {
+                    this.classList.remove('metric-loading');
+                    updateLastUpdatedTime();
+                }, 1000);
+            });
+        });
+        
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Alt/Option + number keys for tab switching
+            if (e.altKey && !e.ctrlKey && !e.metaKey) {
+                switch(e.code) {
+                    case 'Digit1':
+                        e.preventDefault();
+                        switchTab('invoices');
+                        break;
+                    case 'Digit2':
+                        e.preventDefault();
+                        switchTab('projects');
+                        break;
+                    case 'Digit3':
+                        e.preventDefault();
+                        switchTab('payments');
+                        break;
+                    case 'KeyR':
+                        e.preventDefault();
+                        location.reload();
+                        break;
+                }
+            }
+        });
+        
+        // Add smooth scroll to urgent items
+        const urgentSection = document.querySelector('.bg-red-50');
+        if (urgentSection) {
+            urgentSection.addEventListener('click', function() {
+                // Smooth scroll to recent activity
+                document.querySelector('.bg-white.rounded-xl.border').scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            });
+        }
+    }
+    
+    initializeDashboardFeatures();
+    
+    // Performance monitoring and optimization
+    function initializePerformanceMonitoring() {
+        // Monitor page load performance
+        if ('performance' in window) {
+            window.addEventListener('load', function() {
+                const loadTime = performance.timing.loadEventEnd - performance.timing.navigationStart;
+                console.log('Dashboard loaded in:', loadTime + 'ms');
+                
+                // Log performance metrics for optimization
+                const navigation = performance.getEntriesByType('navigation')[0];
+                if (navigation) {
+                    console.log('Performance metrics:', {
+                        loadTime: loadTime,
+                        domContentLoaded: navigation.domContentLoadedEventEnd - navigation.domContentLoadedEventStart,
+                        firstPaint: performance.getEntriesByName('first-paint')[0]?.startTime || 0
+                    });
+                }
+            });
+        }
+        
+        // Monitor memory usage (if supported)
+        if ('memory' in performance) {
+            setInterval(() => {
+                const memory = performance.memory;
+                if (memory.usedJSHeapSize > 50 * 1024 * 1024) { // 50MB threshold
+                    console.warn('High memory usage detected:', memory.usedJSHeapSize / 1024 / 1024 + 'MB');
+                }
+            }, 60000); // Check every minute
+        }
+    }
+    
+    initializePerformanceMonitoring();
+    
+    // Advanced UI enhancements
+    function initializeAdvancedUI() {
+        // Add progress indicators for actions
+        const actionLinks = document.querySelectorAll('a[href*="create"], a[href*="add"]');
+        actionLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                if (!this.dataset.loading) {
+                    this.dataset.loading = 'true';
+                    const originalText = this.textContent;
+                    this.style.opacity = '0.7';
+                    this.style.pointerEvents = 'none';
+                    
+                    // Reset after navigation or timeout
+                    setTimeout(() => {
+                        this.style.opacity = '';
+                        this.style.pointerEvents = '';
+                        delete this.dataset.loading;
+                    }, 3000);
+                }
+            });
+        });
+        
+        // Add contextual tooltips
+        const elements = document.querySelectorAll('[title]');
+        elements.forEach(element => {
+            let tooltip = null;
+            
+            element.addEventListener('mouseenter', function() {
+                const title = this.getAttribute('title');
+                if (!title) return;
+                
+                tooltip = document.createElement('div');
+                tooltip.className = 'fixed bg-gray-900 text-white text-xs rounded py-1 px-2 z-50 pointer-events-none';
+                tooltip.textContent = title;
+                document.body.appendChild(tooltip);
+                
+                // Position tooltip
+                const rect = this.getBoundingClientRect();
+                tooltip.style.left = rect.left + 'px';
+                tooltip.style.top = (rect.bottom + 5) + 'px';
+            });
+            
+            element.addEventListener('mouseleave', function() {
+                if (tooltip) {
+                    tooltip.remove();
+                    tooltip = null;
+                }
+            });
         });
     }
+    
+    initializeAdvancedUI();
+    
+    // Dashboard data refresh functionality
+    function setupDataRefresh() {
+        let refreshInterval;
+        
+        // Auto-refresh every 5 minutes when page is visible
+        function startAutoRefresh() {
+            refreshInterval = setInterval(() => {
+                if (!document.hidden) {
+                    refreshDashboardData();
+                }
+            }, 300000); // 5 minutes
+        }
+        
+        function stopAutoRefresh() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+                refreshInterval = null;
+            }
+        }
+        
+        // Handle visibility changes
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                stopAutoRefresh();
+            } else {
+                startAutoRefresh();
+                // Refresh immediately when tab becomes visible again
+                setTimeout(refreshDashboardData, 1000);
+            }
+        });
+        
+        // Start auto-refresh
+        startAutoRefresh();
+    }
+    
+    function refreshDashboardData() {
+        // In production, this would make AJAX calls to update dashboard data
+        console.log('Refreshing dashboard data...');
+        
+        // Example implementation:
+        /*
+        fetch(window.location.href + '?ajax=1', {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            updateDashboardMetrics(data);
+            updateLastUpdatedTime();
+        })
+        .catch(error => {
+            console.error('Dashboard refresh failed:', error);
+        });
+        */
+        
+        // For now, just update the timestamp
+        updateLastUpdatedTime();
+    }
+    
+    function updateDashboardMetrics(data) {
+        // Update KPI cards
+        if (data.thisMonthCashReceived !== undefined) {
+            const element = document.querySelector('[data-metric="cash-received"] .font-bold');
+            if (element) {
+                const current = parseInt(element.textContent.replace(/[^\d]/g, ''));
+                animateNumber(element, current, data.thisMonthCashReceived);
+            }
+        }
+        
+        // Update other metrics similarly...
+        // This would be implemented based on the specific data structure returned by the server
+    }
+    
+    setupDataRefresh();
+    
+    // Accessibility improvements
+    function enhanceAccessibility() {
+        // Add ARIA labels for better screen reader support
+        const metricCards = document.querySelectorAll('.grid.grid-cols-2 > div');
+        metricCards.forEach((card, index) => {
+            const title = card.querySelector('.text-xs.sm\\:text-sm')?.textContent || '';
+            const value = card.querySelector('.font-bold')?.textContent || '';
+            card.setAttribute('aria-label', `${title}: ${value}`);
+        });
+        
+        // Improve tab navigation
+        const tabButtons = document.querySelectorAll('[role="tab"]');
+        tabButtons.forEach((button, index) => {
+            button.setAttribute('tabindex', index === 0 ? '0' : '-1');
+            button.addEventListener('focus', function() {
+                // Update tabindex for keyboard navigation
+                tabButtons.forEach(b => b.setAttribute('tabindex', '-1'));
+                this.setAttribute('tabindex', '0');
+            });
+        });
+        
+        // Add keyboard navigation for tabs
+        document.addEventListener('keydown', function(e) {
+            const activeTab = document.querySelector('[role="tab"][tabindex="0"]');
+            if (!activeTab) return;
+            
+            let targetTab = null;
+            if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+                e.preventDefault();
+                const tabs = Array.from(tabButtons);
+                const currentIndex = tabs.indexOf(activeTab);
+                
+                if (e.key === 'ArrowRight') {
+                    targetTab = tabs[currentIndex + 1] || tabs[0];
+                } else {
+                    targetTab = tabs[currentIndex - 1] || tabs[tabs.length - 1];
+                }
+                
+                if (targetTab) {
+                    targetTab.click();
+                    targetTab.focus();
+                }
+            }
+        });
+    }
+    
+    enhanceAccessibility();
 });
 
-// Utility function for formatting currency on the client side
+// Utility functions
 function formatCurrency(amount) {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-LK', {
         style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 0
+        currency: 'LKR',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
     }).format(amount);
 }
 
-// Function to update metrics via AJAX (for future use)
-function updateDashboardMetrics(data) {
-    // Update incomplete projects
-    const incompleteElement = document.querySelector('[data-metric="incomplete-projects"]');
-    if (incompleteElement && data.incompleteProjects !== undefined) {
-        animateNumber(incompleteElement, 
-            parseInt(incompleteElement.textContent.replace(/,/g, '')), 
-            data.incompleteProjects
-        );
-    }
+function showNotification(message, type = 'info', duration = 5000) {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 px-4 py-3 rounded-lg shadow-lg z-50 transition-all duration-300 ${
+        type === 'success' ? 'bg-green-500 text-white' :
+        type === 'error' ? 'bg-red-500 text-white' :
+        type === 'warning' ? 'bg-yellow-500 text-black' :
+        'bg-blue-500 text-white'
+    }`;
     
-    // Update revenue metrics
-    const thisMonthElement = document.querySelector('[data-metric="this-month-revenue"]');
-    if (thisMonthElement && data.thisMonthRevenue !== undefined) {
-        const current = parseInt(thisMonthElement.textContent.replace(/[\$,]/g, ''));
-        thisMonthElement.textContent = '$0';
-        animateNumber(thisMonthElement, current, data.thisMonthRevenue);
-    }
+    notification.innerHTML = `
+        <div class="flex items-center space-x-2">
+            <span>${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-2 text-current opacity-70 hover:opacity-100">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+    `;
     
-    // Update other metrics similarly...
+    document.body.appendChild(notification);
+    
+    // Auto-remove after duration
+    setTimeout(() => {
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => notification.remove(), 300);
+    }, duration);
 }
 
-// Service Worker registration for offline functionality (optional)
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function() {
-        navigator.serviceWorker.register('/sw.js')
-            .then(function(registration) {
-                console.log('SW registered: ', registration);
-            })
-            .catch(function(registrationError) {
-                console.log('SW registration failed: ', registrationError);
-            });
-    });
-}
-</script>
-
-<!-- Chart.js CDN -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
-
-<script>
-// Pie Chart Configuration
-function createPieChart(canvasId, data, labels, colors) {
-    const ctx = document.getElementById(canvasId);
-    if (!ctx) return;
-    
-    new Chart(ctx, {
-        type: 'pie',
-        data: {
-            labels: labels,
-            datasets: [{
-                data: data,
-                backgroundColor: colors,
-                borderWidth: 2,
-                borderColor: '#ffffff'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                legend: {
-                    display: false // We show custom legend
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const label = context.label || '';
-                            const value = formatCurrency(context.parsed);
-                            const percentage = ((context.parsed / context.dataset.data.reduce((a, b) => a + b, 0)) * 100).toFixed(1);
-                            return `${label}: ${value} (${percentage}%)`;
-                        }
-                    }
-                }
-            },
-            elements: {
-                arc: {
-                    borderWidth: 2
-                }
-            }
-        }
-    });
-}
-
-// Initialize charts when DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
-    // This Month Chart
-    <?php if ($thisMonthHasData): ?>
-    const thisMonthData = [
-        <?php echo $thisMonthRevenue; ?>,
-        <?php echo $thisMonthProjects; ?>,
-        <?php echo $thisMonthOutstanding; ?>
-    ].filter(value => value > 0);
-    
-    const thisMonthLabels = [];
-    const thisMonthColors = [];
-    
-    <?php if ($thisMonthRevenue > 0): ?>
-    thisMonthLabels.push('Payments');
-    thisMonthColors.push('#10b981');
-    <?php endif; ?>
-    
-    <?php if ($thisMonthProjects > 0): ?>
-    thisMonthLabels.push('Projects');
-    thisMonthColors.push('#3b82f6');
-    <?php endif; ?>
-    
-    <?php if ($thisMonthOutstanding > 0): ?>
-    thisMonthLabels.push('Outstanding');
-    thisMonthColors.push('#f59e0b');
-    <?php endif; ?>
-    
-    if (thisMonthData.length > 0) {
-        createPieChart('thisMonthChart', thisMonthData, thisMonthLabels, thisMonthColors);
-    }
-    <?php endif; ?>
-    
-    // Last Month Chart
-    <?php if ($lastMonthHasData): ?>
-    const lastMonthData = [
-        <?php echo $lastMonthRevenue; ?>,
-        <?php echo $lastMonthProjects; ?>,
-        <?php echo $lastMonthOutstanding; ?>
-    ].filter(value => value > 0);
-    
-    const lastMonthLabels = [];
-    const lastMonthColors = [];
-    
-    <?php if ($lastMonthRevenue > 0): ?>
-    lastMonthLabels.push('Payments');
-    lastMonthColors.push('#10b981');
-    <?php endif; ?>
-    
-    <?php if ($lastMonthProjects > 0): ?>
-    lastMonthLabels.push('Projects');
-    lastMonthColors.push('#3b82f6');
-    <?php endif; ?>
-    
-    <?php if ($lastMonthOutstanding > 0): ?>
-    lastMonthLabels.push('Outstanding');
-    lastMonthColors.push('#f59e0b');
-    <?php endif; ?>
-    
-    if (lastMonthData.length > 0) {
-        createPieChart('lastMonthChart', lastMonthData, lastMonthLabels, lastMonthColors);
-    }
-    <?php endif; ?>
-});
+// Export functions for use in other scripts
+window.dashboardUtils = {
+    switchTab: window.switchTab,
+    formatCurrency,
+    showNotification,
+    refreshDashboardData: () => refreshDashboardData()
+};
 </script>
 
 <?php include '../../includes/footer.php'; ?>

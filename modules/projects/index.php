@@ -216,117 +216,113 @@ try {
 include '../../includes/header.php';
 ?>
 
-<!-- Page Header -->
-<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
-    <div>
-        <h1 class="text-2xl font-bold text-gray-900">Projects</h1>
-        <p class="text-gray-600 mt-1">Manage and track your client projects</p>
-    </div>
-    <div class="flex space-x-3 mt-4 sm:mt-0">
-        <a href="<?php echo Helper::baseUrl('modules/projects/add.php'); ?>" 
-           class="inline-flex items-center px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors">
-            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-            </svg>
-            New Project
-        </a>
-    </div>
-</div>
-
-
-
-<!-- Top Clients Section -->
-<?php if (!empty($topClients)): ?>
-<div class="bg-white rounded-xl border border-gray-200 p-4 mb-6">
-    <div class="flex items-center justify-between mb-3">
-        <h2 class="text-base font-medium text-gray-900">Quick Client Filter</h2>
-        <a href="<?php echo Helper::baseUrl('modules/clients/'); ?>" class="text-sm text-blue-600 hover:text-blue-700">View All →</a>
-    </div>
-    <div class="flex flex-wrap gap-2">
-        <?php foreach ($topClients as $client): ?>
-            <button type="button" 
-                    class="client-filter inline-flex items-center px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-blue-100 hover:text-blue-700 transition-colors text-sm border border-gray-200 hover:border-blue-300"
-                    data-client-id="<?php echo Helper::encryptId($client['id']); ?>"
-                    data-client-name="<?php echo htmlspecialchars($client['company_name']); ?>"
-                    title="<?php echo $client['project_count']; ?> projects">
-                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-2m-2 0H5m14 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v12a2 2 0 002 2h4m0 0V9a2 2 0 012-2h2a2 2 0 012 2v12"></path>
+<!-- Page Header with Mobile-Optimized Layout -->
+<div class="mb-4">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Projects</h1>
+            <p class="text-gray-600 mt-1 hidden sm:block">Manage and track your client projects</p>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-3">
+            <a href="<?php echo Helper::baseUrl('modules/projects/add.php'); ?>" 
+               class="btn-primary inline-flex items-center justify-center px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                 </svg>
-                <span class="font-medium"><?php echo htmlspecialchars($client['company_name']); ?></span>
-                <span class="mx-1 text-gray-400">•</span>
-                <span class="text-gray-600"><?php echo htmlspecialchars($client['contact_person']); ?></span>
-                <span class="ml-1.5 inline-flex items-center justify-center w-5 h-5 bg-blue-100 text-blue-800 text-xs rounded-full">
-                    <?php echo $client['project_count']; ?>
-                </span>
-            </button>
-        <?php endforeach; ?>
+                New Project
+            </a>
+        </div>
     </div>
 </div>
-<?php endif; ?>
 
-<!-- Filters and Search -->
-<div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+<!-- Mobile-First: Search and Quick Filters Only -->
+<div class="bg-white rounded-xl border border-gray-200 p-4 mb-4">
     <form method="GET" class="space-y-4" id="filterForm">
-        <!-- Search and Quick Filters Row -->
-        <div class="flex flex-col sm:flex-row gap-4">
-            <!-- Search -->
-            <div class="flex-1">
-                <div class="relative">
-                    <input type="text" 
-                           name="search" 
-                           value="<?php echo htmlspecialchars($filters['search']); ?>"
-                           placeholder="Search projects, clients, or descriptions..."
-                           class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                    <svg class="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                    </svg>
-                </div>
-            </div>
-
-            <!-- Quick Status Filters -->
-            <div class="flex flex-wrap gap-2">
-                <button type="button" onclick="setStatusFilter('')" 
-                        class="status-filter px-3 py-2 text-sm rounded-lg border transition-colors whitespace-nowrap <?php echo empty($filters['status']) ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'; ?>">
-                    All
-                </button>
-                <button type="button" onclick="setStatusFilter('pending')"
-                        class="status-filter px-3 py-2 text-sm rounded-lg border transition-colors whitespace-nowrap <?php echo $filters['status'] === 'pending' ? 'bg-yellow-100 text-yellow-800 border-yellow-300' : 'bg-white text-gray-700 border-gray-300 hover:bg-yellow-50 hover:text-yellow-700'; ?>">
-                    <span class="inline-block w-2 h-2 bg-yellow-400 rounded-full mr-2"></span>
-                    Pending
-                </button>
-                <button type="button" onclick="setStatusFilter('in_progress')"
-                        class="status-filter px-3 py-2 text-sm rounded-lg border transition-colors whitespace-nowrap <?php echo $filters['status'] === 'in_progress' ? 'bg-blue-100 text-blue-800 border-blue-300' : 'bg-white text-gray-700 border-gray-300 hover:bg-blue-50 hover:text-blue-700'; ?>">
-                    <span class="inline-block w-2 h-2 bg-blue-400 rounded-full mr-2"></span>
-                    In Progress
-                </button>
-                <button type="button" onclick="setStatusFilter('completed')"
-                        class="status-filter px-3 py-2 text-sm rounded-lg border transition-colors whitespace-nowrap <?php echo $filters['status'] === 'completed' ? 'bg-green-100 text-green-800 border-green-300' : 'bg-white text-gray-700 border-gray-300 hover:bg-green-50 hover:text-green-700'; ?>">
-                    <span class="inline-block w-2 h-2 bg-green-400 rounded-full mr-2"></span>
-                    Completed
-                </button>
-                <button type="button" onclick="setStatusFilter('on_hold')"
-                        class="status-filter px-3 py-2 text-sm rounded-lg border transition-colors whitespace-nowrap <?php echo $filters['status'] === 'on_hold' ? 'bg-gray-100 text-gray-800 border-gray-300' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'; ?>">
-                    <span class="inline-block w-2 h-2 bg-gray-400 rounded-full mr-2"></span>
-                    On Hold
-                </button>
-                <button type="button" onclick="setStatusFilter('cancelled')"
-                        class="status-filter px-3 py-2 text-sm rounded-lg border transition-colors whitespace-nowrap <?php echo $filters['status'] === 'cancelled' ? 'bg-red-100 text-red-800 border-red-300' : 'bg-white text-gray-700 border-gray-300 hover:bg-red-50 hover:text-red-700'; ?>">
-                    <span class="inline-block w-2 h-2 bg-red-400 rounded-full mr-2"></span>
-                    Cancelled
-                </button>
-            </div>
+        <!-- Essential Search -->
+        <div class="relative">
+            <input type="text" 
+                   name="search" 
+                   value="<?php echo htmlspecialchars($filters['search']); ?>"
+                   placeholder="Search projects, clients..."
+                   class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <svg class="w-5 h-5 text-gray-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
         </div>
 
-        <!-- Advanced Filters -->
-        <div class="border-t pt-4">
-            <button type="button" id="toggleAdvanced" class="flex items-center text-sm text-gray-600 hover:text-gray-900 mb-4">
-                <svg class="w-4 h-4 mr-2 transform transition-transform" id="advancedIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <!-- Compact Status Filters - Mobile Optimized -->
+        <div class="flex flex-wrap gap-2">
+            <button type="button" onclick="setStatusFilter('')" 
+                    class="status-filter flex-1 sm:flex-none px-3 py-2 text-sm rounded-lg border transition-colors whitespace-nowrap <?php echo empty($filters['status']) ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'; ?>">
+                All
+            </button>
+            <button type="button" onclick="setStatusFilter('pending')"
+                    class="status-filter flex-1 sm:flex-none px-3 py-2 text-sm rounded-lg border transition-colors whitespace-nowrap <?php echo $filters['status'] === 'pending' ? 'bg-yellow-100 text-yellow-800 border-yellow-300' : 'bg-white text-gray-700 border-gray-300 hover:bg-yellow-50 hover:text-yellow-700'; ?>">
+                Pending
+            </button>
+            <button type="button" onclick="setStatusFilter('in_progress')"
+                    class="status-filter flex-1 sm:flex-none px-3 py-2 text-sm rounded-lg border transition-colors whitespace-nowrap <?php echo $filters['status'] === 'in_progress' ? 'bg-blue-100 text-blue-800 border-blue-300' : 'bg-white text-gray-700 border-gray-300 hover:bg-blue-50 hover:text-blue-700'; ?>">
+                Active
+            </button>
+            <button type="button" onclick="setStatusFilter('completed')"
+                    class="status-filter flex-1 sm:flex-none px-3 py-2 text-sm rounded-lg border transition-colors whitespace-nowrap <?php echo $filters['status'] === 'completed' ? 'bg-green-100 text-green-800 border-green-300' : 'bg-white text-gray-700 border-gray-300 hover:bg-green-50 hover:text-green-700'; ?>">
+                Done
+            </button>
+        </div>
+
+        <!-- Mobile Filter Toggle Button -->
+        <div class="flex items-center justify-between">
+            <button type="button" id="mobileFiltersToggle" 
+                    class="lg:hidden inline-flex items-center text-sm text-blue-600 hover:text-blue-700">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z"></path>
+                </svg>
+                More Filters
+                <span class="ml-1 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full" id="activeFiltersCount">
+                    <?php 
+                    $activeFilters = array_filter($filters, function($value, $key) { 
+                        return !empty($value) && !in_array($key, ['search', 'status', 'sort_by', 'sort_order']); 
+                    }, ARRAY_FILTER_USE_BOTH);
+                    echo count($activeFilters); 
+                    ?>
+                </span>
+            </button>
+            
+            <!-- Desktop: Show Advanced Filters Toggle -->
+            <button type="button" id="desktopFiltersToggle" 
+                    class="hidden lg:inline-flex items-center text-sm text-gray-600 hover:text-gray-900">
+                <svg class="w-4 h-4 mr-2 transform transition-transform" id="desktopFiltersIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                 </svg>
                 Advanced Filters
             </button>
+        </div>
 
-            <div id="advancedFilters" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Advanced Filters - Hidden by Default on Mobile -->
+        <div id="advancedFilters" class="hidden border-t pt-4 space-y-4">
+            <!-- Top Clients Section - Moved Inside Advanced Filters -->
+            <?php if (!empty($topClients)): ?>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Quick Client Filter</label>
+                    <div class="flex flex-wrap gap-2">
+                        <?php foreach ($topClients as $client): ?>
+                            <button type="button" 
+                                    class="client-filter inline-flex items-center px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-blue-100 hover:text-blue-700 transition-colors text-sm border border-gray-200 hover:border-blue-300"
+                                    data-client-id="<?php echo Helper::encryptId($client['id']); ?>"
+                                    data-client-name="<?php echo htmlspecialchars($client['company_name']); ?>"
+                                    title="<?php echo $client['project_count']; ?> projects">
+                                <?php echo htmlspecialchars($client['company_name']); ?>
+                                <span class="ml-1.5 inline-flex items-center justify-center w-5 h-5 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                    <?php echo $client['project_count']; ?>
+                                </span>
+                            </button>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
+
+            <!-- Advanced Filter Options -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <!-- Project Type -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Project Type</label>
@@ -365,78 +361,76 @@ include '../../includes/header.php';
                         <option value="over_500k" <?php echo $filters['amount_range'] === 'over_500k' ? 'selected' : ''; ?>>Over LKR 500,000</option>
                     </select>
                 </div>
+            </div>
 
-                <!-- Sort By -->
+            <!-- Sort Options -->
+            <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Sort By</label>
-                    <div class="flex space-x-2">
-                        <select name="sort_by" class="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <option value="created_at" <?php echo $filters['sort_by'] === 'created_at' ? 'selected' : ''; ?>>Created Date</option>
-                            <option value="project_name" <?php echo $filters['sort_by'] === 'project_name' ? 'selected' : ''; ?>>Project Name</option>
-                            <option value="total_amount" <?php echo $filters['sort_by'] === 'total_amount' ? 'selected' : ''; ?>>Amount</option>
-                            <option value="start_date" <?php echo $filters['sort_by'] === 'start_date' ? 'selected' : ''; ?>>Start Date</option>
-                            <option value="end_date" <?php echo $filters['sort_by'] === 'end_date' ? 'selected' : ''; ?>>End Date</option>
-                        </select>
-                        <select name="sort_order" class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <option value="DESC" <?php echo $filters['sort_order'] === 'DESC' ? 'selected' : ''; ?>>Desc</option>
-                            <option value="ASC" <?php echo $filters['sort_order'] === 'ASC' ? 'selected' : ''; ?>>Asc</option>
-                        </select>
-                    </div>
+                    <select name="sort_by" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="created_at" <?php echo $filters['sort_by'] === 'created_at' ? 'selected' : ''; ?>>Created Date</option>
+                        <option value="project_name" <?php echo $filters['sort_by'] === 'project_name' ? 'selected' : ''; ?>>Project Name</option>
+                        <option value="total_amount" <?php echo $filters['sort_by'] === 'total_amount' ? 'selected' : ''; ?>>Amount</option>
+                        <option value="start_date" <?php echo $filters['sort_by'] === 'start_date' ? 'selected' : ''; ?>>Start Date</option>
+                        <option value="end_date" <?php echo $filters['sort_by'] === 'end_date' ? 'selected' : ''; ?>>End Date</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Order</label>
+                    <select name="sort_order" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="DESC" <?php echo $filters['sort_order'] === 'DESC' ? 'selected' : ''; ?>>Newest First</option>
+                        <option value="ASC" <?php echo $filters['sort_order'] === 'ASC' ? 'selected' : ''; ?>>Oldest First</option>
+                    </select>
                 </div>
             </div>
 
-            <div class="flex justify-between items-center mt-4">
+            <!-- Filter Actions -->
+            <div class="flex justify-between items-center pt-4 border-t">
                 <button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z"></path>
                     </svg>
                     Apply Filters
                 </button>
-                <a href="<?php echo Helper::baseUrl('modules/projects/'); ?>" class="text-sm text-gray-600 hover:text-gray-900">Clear All Filters</a>
+                <a href="<?php echo Helper::baseUrl('modules/projects/'); ?>" class="text-sm text-gray-600 hover:text-gray-900">Clear All</a>
             </div>
         </div>
 
-        <!-- Hidden inputs for client filter -->
+        <!-- Hidden inputs -->
         <input type="hidden" name="client_id" id="clientFilter" value="<?php echo htmlspecialchars($filters['client_id']); ?>">
         <input type="hidden" name="status" id="statusFilter" value="<?php echo htmlspecialchars($filters['status']); ?>">
     </form>
 </div>
 
-<!-- Projects Grid -->
-<div class="space-y-6">
-    <!-- Active Filters Display -->
-    <?php if (!empty(array_filter($filters))): ?>
-        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div class="flex items-center justify-between">
-                <div class="flex flex-wrap items-center gap-2">
-                    <span class="text-sm font-medium text-blue-800">Active Filters:</span>
-                    <?php if (!empty($filters['search'])): ?>
-                        <span class="inline-flex items-center px-2 py-1 bg-white border border-blue-200 rounded text-sm text-blue-800">
-                            Search: "<?php echo htmlspecialchars($filters['search']); ?>"
-                        </span>
-                    <?php endif; ?>
-                    <?php if (!empty($filters['status'])): ?>
-                        <span class="inline-flex items-center px-2 py-1 bg-white border border-blue-200 rounded text-sm text-blue-800">
-                            Status: <?php echo ucwords(str_replace('_', ' ', $filters['status'])); ?>
-                        </span>
-                    <?php endif; ?>
-                    <?php if (!empty($filters['client_id'])): ?>
-                        <span class="inline-flex items-center px-2 py-1 bg-white border border-blue-200 rounded text-sm text-blue-800">
-                            Client: <span id="selectedClientName">Selected</span>
-                        </span>
-                    <?php endif; ?>
-                    <?php if (!empty($filters['project_type'])): ?>
-                        <span class="inline-flex items-center px-2 py-1 bg-white border border-blue-200 rounded text-sm text-blue-800">
-                            Type: <?php echo ucwords(str_replace('_', ' ', $filters['project_type'])); ?>
-                        </span>
-                    <?php endif; ?>
-                </div>
-                <a href="<?php echo Helper::baseUrl('modules/projects/'); ?>" class="text-sm text-blue-600 hover:text-blue-700">Clear All</a>
+<!-- Active Filters Display - Compact -->
+<?php if (!empty(array_filter($filters, function($v, $k) { return !empty($v) && !in_array($k, ['sort_by', 'sort_order']); }, ARRAY_FILTER_USE_BOTH))): ?>
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+        <div class="flex items-center justify-between">
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="text-sm font-medium text-blue-800">Filters:</span>
+                <?php if (!empty($filters['search'])): ?>
+                    <span class="inline-flex items-center px-2 py-1 bg-white border border-blue-200 rounded text-xs text-blue-800">
+                        "<?php echo htmlspecialchars(substr($filters['search'], 0, 20)) . (strlen($filters['search']) > 20 ? '...' : ''); ?>"
+                    </span>
+                <?php endif; ?>
+                <?php if (!empty($filters['status'])): ?>
+                    <span class="inline-flex items-center px-2 py-1 bg-white border border-blue-200 rounded text-xs text-blue-800">
+                        <?php echo ucwords(str_replace('_', ' ', $filters['status'])); ?>
+                    </span>
+                <?php endif; ?>
+                <?php if (!empty($filters['client_id'])): ?>
+                    <span class="inline-flex items-center px-2 py-1 bg-white border border-blue-200 rounded text-xs text-blue-800">
+                        Client Selected
+                    </span>
+                <?php endif; ?>
             </div>
+            <a href="<?php echo Helper::baseUrl('modules/projects/'); ?>" class="text-sm text-blue-600 hover:text-blue-700">Clear</a>
         </div>
-    <?php endif; ?>
+    </div>
+<?php endif; ?>
 
-    <!-- Projects List -->
+<!-- Projects List - THE MAIN CONTENT -->
+<div class="space-y-4">
     <?php if (empty($projects)): ?>
         <div class="bg-white rounded-xl border border-gray-200 p-12 text-center">
             <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -461,19 +455,13 @@ include '../../includes/header.php';
             <?php endif; ?>
         </div>
     <?php else: ?>
-        <!-- Projects Table -->
+        <!-- Projects Table/Cards -->
         <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
             <!-- Desktop Table -->
             <div class="hidden md:block overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Project
-                            </th>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Client
-                            </th>
                             <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Status
                             </th>
@@ -521,7 +509,6 @@ include '../../includes/header.php';
                                 <!-- Status -->
                                 <td class="px-4 py-4">
                                     <?php 
-                                    // Enhanced status badges
                                     $status = $project['status'];
                                     $statusClasses = [
                                         'pending' => 'bg-yellow-50 text-yellow-700 border border-yellow-200',
@@ -575,14 +562,14 @@ include '../../includes/header.php';
                 </table>
             </div>
 
-            <!-- Mobile Cards -->
+            <!-- Mobile Cards - Prioritized Content -->
             <div class="md:hidden divide-y divide-gray-200">
                 <?php foreach ($projects as $project): ?>
                     <div class="p-4 hover:bg-gray-50 transition-colors">
                         <!-- Project Header -->
                         <div class="flex items-start justify-between mb-3">
                             <div class="flex-1 min-w-0">
-                                <h3 class="text-sm font-medium text-gray-900 truncate">
+                                <h3 class="text-sm font-semibold text-gray-900 truncate">
                                     <a href="<?php echo Helper::baseUrl('modules/projects/view.php?id=' . Helper::encryptId($project['id'])); ?>" 
                                        class="hover:text-blue-600 transition-colors">
                                         <?php echo htmlspecialchars($project['project_name']); ?>
@@ -627,7 +614,7 @@ include '../../includes/header.php';
                             </div>
                             <div class="text-right">
                                 <p class="text-xs text-gray-500">Amount</p>
-                                <p class="text-sm font-medium text-gray-900">
+                                <p class="text-sm font-semibold text-gray-900">
                                     <?php echo Helper::formatCurrency($project['total_amount']); ?>
                                 </p>
                                 <?php if ($project['invoice_count'] > 0): ?>
@@ -642,11 +629,11 @@ include '../../includes/header.php';
                         <div class="flex space-x-2">
                             <a href="<?php echo Helper::baseUrl('modules/projects/view.php?id=' . Helper::encryptId($project['id'])); ?>" 
                                class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-gray-100 text-gray-700 rounded text-xs font-medium hover:bg-gray-200 transition-colors">
-                                View Project
+                                View
                             </a>
                             <a href="<?php echo Helper::baseUrl('modules/invoices/create.php?project_id=' . Helper::encryptId($project['id'])); ?>" 
                                class="flex-1 inline-flex items-center justify-center px-3 py-2 bg-blue-100 text-blue-700 rounded text-xs font-medium hover:bg-blue-200 transition-colors">
-                                Create Invoice
+                                Invoice
                             </a>
                         </div>
                     </div>
@@ -656,17 +643,17 @@ include '../../includes/header.php';
 
         <!-- Pagination -->
         <?php if ($totalPages > 1): ?>
-            <div class="bg-white rounded-xl border border-gray-200 p-6">
+            <div class="bg-white rounded-xl border border-gray-200 p-4">
                 <div class="flex items-center justify-between">
-                    <div class="text-sm text-gray-600">
+                    <div class="text-sm text-gray-600 hidden sm:block">
                         Showing <?php echo (($page - 1) * $limit) + 1; ?> to <?php echo min($page * $limit, $totalProjects); ?> of <?php echo $totalProjects; ?> projects
                     </div>
                     
-                    <div class="flex space-x-2">
+                    <div class="flex space-x-2 mx-auto sm:mx-0">
                         <?php if ($page > 1): ?>
                             <a href="?<?php echo http_build_query(array_merge($_GET, ['page' => $page - 1])); ?>" 
-                               class="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
-                                Previous
+                               class="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm">
+                                ← Prev
                             </a>
                         <?php endif; ?>
 
@@ -677,15 +664,15 @@ include '../../includes/header.php';
                         for ($i = $startPage; $i <= $endPage; $i++):
                         ?>
                             <a href="?<?php echo http_build_query(array_merge($_GET, ['page' => $i])); ?>" 
-                               class="px-3 py-2 rounded-lg transition-colors <?php echo $i === $page ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'; ?>">
+                               class="px-3 py-2 rounded-lg transition-colors text-sm <?php echo $i === $page ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'; ?>">
                                 <?php echo $i; ?>
                             </a>
                         <?php endfor; ?>
 
                         <?php if ($page < $totalPages): ?>
                             <a href="?<?php echo http_build_query(array_merge($_GET, ['page' => $page + 1])); ?>" 
-                               class="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
-                                Next
+                               class="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm">
+                                Next →
                             </a>
                         <?php endif; ?>
                     </div>
@@ -696,53 +683,93 @@ include '../../includes/header.php';
 </div>
 
 <style>
-/* Custom styles for enhanced interactivity */
-.client-filter:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-}
+/* Mobile-First Responsive Design */
 
-.status-filter.active {
-    background-color: #1f2937;
-    color: white;
-    border-color: #1f2937;
-}
-
-/* Status filter buttons */
-.status-filter {
-    font-weight: 500;
-    min-height: 40px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.status-filter:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-/* Mobile optimizations for status filters */
+/* Status filter optimizations for mobile */
 @media (max-width: 640px) {
     .status-filter {
-        min-width: calc(50% - 0.25rem);
-        flex: 1;
+        min-height: 44px; /* Better touch targets */
         font-size: 0.875rem;
-        padding: 0.5rem 0.75rem;
-        text-align: center;
+        font-weight: 500;
     }
     
-    /* Stack filters in 2 columns on small screens */
+    /* Two-column layout for status filters on very small screens */
     .flex.flex-wrap.gap-2 {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 0.5rem;
     }
     
-    /* Make "All" button span full width */
+    /* "All" button spans full width */
     .status-filter:first-child {
         grid-column: 1 / -1;
-        min-width: 100%;
+    }
+}
+
+/* Enhanced mobile card styling */
+.md\:hidden > div {
+    border-radius: 0.5rem;
+    margin: 0.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.md\:hidden > div:hover {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+}
+
+/* Filter toggle improvements */
+#mobileFiltersToggle, #desktopFiltersToggle {
+    transition: all 0.2s ease;
+}
+
+#mobileFiltersToggle:hover, #desktopFiltersToggle:hover {
+    transform: translateY(-1px);
+}
+
+/* Advanced filters animation */
+#advancedFilters {
+    transition: all 0.3s ease-in-out;
+    overflow: hidden;
+}
+
+#advancedFilters.show {
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+        max-height: 0;
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+        max-height: 1000px;
+    }
+}
+
+/* Client filter buttons */
+.client-filter {
+    transition: all 0.15s ease;
+}
+
+.client-filter:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Improved pagination for mobile */
+@media (max-width: 640px) {
+    .flex.space-x-2 {
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    
+    .flex.space-x-2 > * {
+        margin: 0; /* Reset space-x margin */
     }
 }
 
@@ -750,102 +777,127 @@ include '../../includes/header.php';
 .status-badge {
     font-weight: 500;
     letter-spacing: 0.025em;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
-/* Table row hover effects */
+/* Table hover effects */
 tbody tr:hover {
     background-color: #f9fafb;
+    transform: translateX(2px);
+    transition: all 0.15s ease;
 }
 
-/* Mobile card hover effects */
-.md\:hidden > div:hover {
-    background-color: #f9fafb;
+/* Better focus states */
+input:focus, select:focus {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
 }
 
 /* Loading states */
 .loading {
     opacity: 0.6;
     pointer-events: none;
+    position: relative;
 }
 
-/* Smooth transitions */
-.transition-all {
-    transition-property: all;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    transition-duration: 200ms;
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
 }
 
-/* Mobile responsive improvements */
-@media (max-width: 768px) {
-    /* Better touch targets */
-    .client-filter {
-        min-height: 44px;
-        display: flex;
-        align-items: center;
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .border-gray-200 {
+        border-color: #000;
     }
     
-    /* Improved mobile cards spacing */
-    .md\:hidden > div {
-        padding: 1rem;
+    .text-gray-500 {
+        color: #000;
     }
     
-    /* Better button spacing on mobile */
-    .flex.space-x-2 > * {
-        flex: 1;
-        text-align: center;
+    .bg-gray-50 {
+        background-color: #fff;
     }
 }
 
-/* Status badge responsive behavior */
-@media (max-width: 640px) {
-    .status-badge {
-        font-size: 0.75rem;
-        padding: 0.25rem 0.5rem;
+/* Print styles */
+@media print {
+    .no-print {
+        display: none;
     }
-}
-
-/* Action buttons styling */
-.action-button {
-    transition: all 0.15s ease-in-out;
-}
-
-.action-button:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-/* Table cell alignment */
-td {
-    vertical-align: top;
-}
-
-/* Minimal design improvements */
-.minimal-border {
-    border: 1px solid #e5e7eb;
-}
-
-.minimal-shadow {
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-/* Responsive grid improvements */
-.grid.grid-cols-2 {
-    gap: 1rem;
-}
-
-@media (max-width: 480px) {
-    .grid.grid-cols-2 {
-        grid-template-columns: 1fr;
-        gap: 0.75rem;
+    
+    .bg-white {
+        background: white !important;
+    }
+    
+    .text-blue-600 {
+        color: black !important;
     }
 }
 </style>
 
 <script>
-// Advanced filters toggle
-document.getElementById('toggleAdvanced').addEventListener('click', function() {
+// Mobile-first JavaScript enhancements
+
+// Mobile filters toggle
+document.getElementById('mobileFiltersToggle')?.addEventListener('click', function() {
     const advancedFilters = document.getElementById('advancedFilters');
-    const icon = document.getElementById('advancedIcon');
+    const isHidden = advancedFilters.classList.contains('hidden');
+    
+    if (isHidden) {
+        advancedFilters.classList.remove('hidden');
+        advancedFilters.classList.add('show');
+        this.innerHTML = `
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+            Hide Filters
+            <span class="ml-1 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full" id="activeFiltersCount">
+                ${document.getElementById('activeFiltersCount').textContent}
+            </span>
+        `;
+    } else {
+        advancedFilters.classList.add('hidden');
+        advancedFilters.classList.remove('show');
+        this.innerHTML = `
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z"></path>
+            </svg>
+            More Filters
+            <span class="ml-1 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full" id="activeFiltersCount">
+                ${document.getElementById('activeFiltersCount').textContent}
+            </span>
+        `;
+    }
+});
+
+// Desktop filters toggle
+document.getElementById('desktopFiltersToggle')?.addEventListener('click', function() {
+    const advancedFilters = document.getElementById('advancedFilters');
+    const icon = document.getElementById('desktopFiltersIcon');
     
     if (advancedFilters.classList.contains('hidden')) {
         advancedFilters.classList.remove('hidden');
@@ -856,13 +908,12 @@ document.getElementById('toggleAdvanced').addEventListener('click', function() {
     }
 });
 
-// Status filter buttons
+// Status filter functionality
 function setStatusFilter(status) {
     document.getElementById('statusFilter').value = status;
     
-    // Reset all button states
+    // Update button states
     document.querySelectorAll('.status-filter').forEach(btn => {
-        // Remove all status-specific classes
         btn.classList.remove(
             'bg-gray-800', 'text-white', 'border-gray-800',
             'bg-yellow-100', 'text-yellow-800', 'border-yellow-300',
@@ -870,15 +921,13 @@ function setStatusFilter(status) {
             'bg-green-100', 'text-green-800', 'border-green-300',
             'bg-red-100', 'text-red-800', 'border-red-300'
         );
-        // Add default classes
         btn.classList.add('bg-white', 'text-gray-700', 'border-gray-300');
     });
     
-    // Set active state for clicked button
+    // Set active button style
     const activeButton = event.target;
     activeButton.classList.remove('bg-white', 'text-gray-700', 'border-gray-300');
     
-    // Apply status-specific styling
     switch(status) {
         case '':
             activeButton.classList.add('bg-gray-800', 'text-white', 'border-gray-800');
@@ -900,144 +949,142 @@ function setStatusFilter(status) {
             break;
     }
     
-    // Submit form
+    // Auto-submit form
     document.getElementById('filterForm').submit();
 }
 
-// Client filter from top clients section
+// Client filter functionality
 document.querySelectorAll('.client-filter').forEach(client => {
     client.addEventListener('click', function() {
         const clientId = this.dataset.clientId;
-        const clientName = this.dataset.clientName;
-        
-        // Set client filter
         document.getElementById('clientFilter').value = clientId;
-        
-        // Update display name if exists
-        const selectedClientName = document.getElementById('selectedClientName');
-        if (selectedClientName) {
-            selectedClientName.textContent = clientName;
-        }
-        
-        // Submit form
         document.getElementById('filterForm').submit();
     });
 });
 
-// Auto-submit search after typing pause
+// Auto-submit search with debounce
 let searchTimeout;
-document.querySelector('input[name="search"]').addEventListener('input', function() {
+document.querySelector('input[name="search"]')?.addEventListener('input', function() {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
         document.getElementById('filterForm').submit();
     }, 500);
 });
 
+// Loading states
+document.querySelectorAll('a[href*="view.php"], a[href*="create.php"]').forEach(link => {
+    link.addEventListener('click', function() {
+        this.classList.add('loading');
+        setTimeout(() => this.classList.remove('loading'), 3000);
+    });
+});
+
 // Keyboard shortcuts
 document.addEventListener('keydown', function(e) {
-    // Press 'N' to create new project
+    // 'N' for new project
     if (e.key.toLowerCase() === 'n' && !e.ctrlKey && !e.metaKey && !e.target.matches('input, textarea, select')) {
         e.preventDefault();
         window.location.href = '<?php echo Helper::baseUrl('modules/projects/add.php'); ?>';
     }
     
-    // Press '/' to focus search
+    // '/' for search focus
     if (e.key === '/' && !e.target.matches('input, textarea, select')) {
         e.preventDefault();
-        document.querySelector('input[name="search"]').focus();
+        document.querySelector('input[name="search"]')?.focus();
     }
     
-    // Press 'Escape' to clear search
+    // 'Escape' to clear search
     if (e.key === 'Escape' && e.target.matches('input[name="search"]')) {
         e.target.value = '';
         document.getElementById('filterForm').submit();
     }
+    
+    // 'F' for filters toggle on mobile
+    if (e.key.toLowerCase() === 'f' && !e.ctrlKey && !e.metaKey && !e.target.matches('input, textarea, select')) {
+        e.preventDefault();
+        if (window.innerWidth < 1024) {
+            document.getElementById('mobileFiltersToggle')?.click();
+        } else {
+            document.getElementById('desktopFiltersToggle')?.click();
+        }
+    }
 });
 
-// Add loading states to project cards
-document.querySelectorAll('a[href*="view.php"], a[href*="create.php"]').forEach(link => {
-    link.addEventListener('click', function() {
-        this.classList.add('loading');
-        
-        // Remove loading state after timeout
-        setTimeout(() => {
-            this.classList.remove('loading');
-        }, 3000);
-    });
-});
-
-// Real-time filter updates
-function updateFilters() {
-    const form = document.getElementById('filterForm');
-    const formData = new FormData(form);
-    const params = new URLSearchParams(formData);
-    
-    // Update URL without reload for better UX
-    const newUrl = window.location.pathname + '?' + params.toString();
-    history.pushState(null, '', newUrl);
-}
-
-// Infinite scroll (optional enhancement)
-let isLoading = false;
-function loadMoreProjects() {
-    if (isLoading) return;
-    
-    const currentPage = <?php echo $page; ?>;
-    const totalPages = <?php echo $totalPages; ?>;
-    
-    if (currentPage >= totalPages) return;
-    
-    isLoading = true;
-    
-    // Implementation would go here for AJAX loading
-    console.log('Loading more projects...');
-}
-
-// Initialize page
+// Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
-    // Show advanced filters if any advanced filter is active
-    const hasAdvancedFilters = '<?php echo !empty($filters['project_type']) || !empty($filters['date_range']) || !empty($filters['amount_range']) ? 'true' : 'false'; ?>';
-    if (hasAdvancedFilters === 'true') {
+    // Show advanced filters if any are active
+    const hasAdvancedFilters = <?php echo json_encode(!empty($filters['project_type']) || !empty($filters['date_range']) || !empty($filters['amount_range'])); ?>;
+    if (hasAdvancedFilters) {
         document.getElementById('advancedFilters').classList.remove('hidden');
-        document.getElementById('advancedIcon').style.transform = 'rotate(180deg)';
+        const desktopIcon = document.getElementById('desktopFiltersIcon');
+        if (desktopIcon) desktopIcon.style.transform = 'rotate(180deg)';
     }
     
-    // Set up intersection observer for animations
-    const observerOptions = {
-        threshold: 0.1,
-        rootMargin: '0px 0px -50px 0px'
-    };
-    
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.style.opacity = '1';
-                entry.target.style.transform = 'translateY(0)';
-            }
+    // Intersection observer for fade-in animations
+    if ('IntersectionObserver' in window) {
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+        
+        // Observe project cards
+        document.querySelectorAll('.md\\:hidden > div, tbody tr').forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            card.style.transition = `opacity 0.6s ease-out ${index * 0.1}s, transform 0.6s ease-out ${index * 0.1}s`;
+            observer.observe(card);
         });
-    }, observerOptions);
+    }
     
-    // Observe project cards
-    document.querySelectorAll('.bg-white.rounded-xl').forEach(card => {
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(20px)';
-        card.style.transition = 'opacity 0.6s ease-out, transform 0.6s ease-out';
-        observer.observe(card);
-    });
+    // Update active filters counter
+    function updateActiveFiltersCount() {
+        const count = <?php echo count($activeFilters ?? []); ?>;
+        const counter = document.getElementById('activeFiltersCount');
+        if (counter) counter.textContent = count;
+    }
+    
+    updateActiveFiltersCount();
 });
 
-// Export projects functionality
-function exportProjects() {
-    const currentFilters = new URLSearchParams(window.location.search);
-    currentFilters.set('export', 'csv');
-    
-    window.location.href = window.location.pathname + '?' + currentFilters.toString();
+// Service Worker for offline functionality (optional)
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/sw.js').catch(function(error) {
+            console.log('SW registration failed');
+        });
+    });
 }
 
-// Print projects list
-function printProjects() {
-    window.print();
-}
+// Performance optimizations
+// Lazy load images if any
+document.addEventListener('DOMContentLoaded', function() {
+    if ('IntersectionObserver' in window) {
+        const imageObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const img = entry.target;
+                    img.src = img.dataset.src;
+                    img.classList.remove('lazy');
+                    imageObserver.unobserve(img);
+                }
+            });
+        });
+        
+        document.querySelectorAll('img[data-src]').forEach(img => {
+            imageObserver.observe(img);
+        });
+    }
+});
 </script>
 
 <?php include '../../includes/footer.php'; ?>
+                            

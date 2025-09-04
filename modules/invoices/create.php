@@ -198,7 +198,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 $invoiceStmt = $db->prepare($invoiceQuery);
                 $invoiceStmt->bindParam(':invoice_number', $invoiceNumber);
-                $invoiceStmt->bindParam(':project_id', $selectedProjectId);
+                // Handle NULL project_id properly
+                if ($selectedProjectId) {
+                    $invoiceStmt->bindParam(':project_id', $selectedProjectId, PDO::PARAM_INT);
+                } else {
+                    $invoiceStmt->bindValue(':project_id', null, PDO::PARAM_NULL);
+                }
                 $invoiceStmt->bindParam(':client_id', $finalClientId);
                 $invoiceStmt->bindParam(':invoice_date', $formData['invoice_date']);
                 $invoiceStmt->bindParam(':due_date', $formData['due_date']);
