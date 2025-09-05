@@ -1,11 +1,16 @@
 <?php
 // core/Database.php
 class Database {
-    private $host = 'localhost';
-    private $db_name = 'digibrand_crm';
-    private $username = 'root';
-    private $password = '';
+    //private $host = 'localhost'; 
+    //private $db_name = 'digibrand_crm';
+    // $username = 'root';
+    //private $password = '';
     public $conn;
+
+    private $host = 'localhost'; 
+    private $db_name = 'digibrand_crm'; //pgmocpbh_invoice
+    private $username = 'root'; //pgmocpbh_invoice
+    private $password = ''; //Bandaranayake123
 
     public function getConnection() {
         $this->conn = null;

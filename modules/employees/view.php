@@ -5,6 +5,29 @@ session_start();
 require_once '../../core/Database.php';
 require_once '../../core/Helper.php';
 
+// Helper function for time elapsed string
+function time_elapsed_string($datetime, $full = false) {
+    $now = new DateTime;
+    $ago = new DateTime($datetime);
+    $diff = $now->diff($ago);
+
+    $weeks = floor($diff->d / 7);
+    $days = $diff->d % 7;
+
+    $string = array();
+    
+    if ($diff->y) $string[] = $diff->y . ' year' . ($diff->y > 1 ? 's' : '');
+    if ($diff->m) $string[] = $diff->m . ' month' . ($diff->m > 1 ? 's' : '');
+    if ($weeks) $string[] = $weeks . ' week' . ($weeks > 1 ? 's' : '');
+    if ($days) $string[] = $days . ' day' . ($days > 1 ? 's' : '');
+    if ($diff->h) $string[] = $diff->h . ' hour' . ($diff->h > 1 ? 's' : '');
+    if ($diff->i) $string[] = $diff->i . ' minute' . ($diff->i > 1 ? 's' : '');
+    if ($diff->s) $string[] = $diff->s . ' second' . ($diff->s > 1 ? 's' : '');
+
+    if (!$full) $string = array_slice($string, 0, 1);
+    return $string ? implode(', ', $string) . ' ago' : 'just now';
+}
+
 // Check if user is logged in
 if (!Helper::isLoggedIn()) {
     Helper::redirect('modules/auth/login.php');
@@ -190,7 +213,7 @@ include '../../includes/header.php';
                             <i class="fas fa-money-bill-wave mr-2"></i>
                             View All Payments
                         </a>
-                        <a href="<?php echo Helper::baseUrl('modules/employee_payments/add.php?employee_id=' . Helper::encryptId($employee['id'])); ?>" 
+                        <a href="<?php echo Helper::baseUrl('modules/employees/add.php?employee_id=' . Helper::encryptId($employee['id'])); ?>" 
                            class="inline-flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
                             <i class="fas fa-plus mr-2"></i>
                             Add Payment
@@ -258,7 +281,7 @@ include '../../includes/header.php';
 
         <!-- Recent Payments -->
         <div class="bg-white rounded-2xl border border-gray-100 shadow-sm">
-            <div class="p-6 border-b border-gray-50">
+            <div class="p-4 sm:p-6 border-b border-gray-50">
                 <div class="flex items-center justify-between">
                     <h2 class="text-xl font-bold text-gray-900">Recent Payments</h2>
                     <a href="<?php echo Helper::baseUrl('modules/employee_payments/?employee_id=' . $employee['id']); ?>" 
@@ -268,92 +291,243 @@ include '../../includes/header.php';
                 </div>
             </div>
             
-            <div class="p-6">
+            <div class="p-4 sm:p-6">
                 <?php if (empty($recentPayments)): ?>
                     <div class="text-center py-8">
                         <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                             <i class="fas fa-money-bill-wave text-gray-400 text-xl"></i>
                         </div>
                         <h3 class="text-lg font-medium text-gray-900 mb-2">No payments yet</h3>
-                        <p class="text-gray-600 mb-4">This employee hasn't received any payments yet.</p>
-                        <a href="<?php echo Helper::baseUrl('modules/employee_payments/add.php?employee_id=' . Helper::encryptId($employee['id'])); ?>" 
-                           class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        <p class="text-gray-600 mb-4 text-sm">This employee hasn't received any payments yet.</p>
+                        <a href="<?php echo Helper::baseUrl('modules/employees/add.php?employee_id=' . Helper::encryptId($employee['id'])); ?>" 
+                           class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
                             <i class="fas fa-plus mr-2"></i>
                             Add First Payment
                         </a>
                     </div>
                 <?php else: ?>
-                    <div class="space-y-4">
-                        <?php foreach ($recentPayments as $payment): ?>
-                            <div class="flex items-start justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                                <div class="flex-1 min-w-0">
-                                    <div class="flex items-center space-x-3 mb-2">
-                                        <h4 class="font-medium text-gray-900">
-                                            $<?php echo number_format($payment['payment_amount'], 2); ?>
-                                        </h4>
-                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium <?php
-                                            switch($payment['payment_status']) {
-                                                case 'paid':
-                                                    echo 'bg-green-100 text-green-800';
-                                                    break;
-                                                case 'pending':
-                                                    echo 'bg-yellow-100 text-yellow-800';
-                                                    break;
-                                                case 'cancelled':
-                                                    echo 'bg-red-100 text-red-800';
-                                                    break;
-                                                default:
-                                                    echo 'bg-gray-100 text-gray-800';
-                                            }
-                                        ?>">
-                                            <?php echo ucfirst($payment['payment_status']); ?>
-                                        </span>
-                                        <span class="text-xs text-gray-500">
-                                            <?php echo ucwords(str_replace('_', ' ', $payment['payment_method'])); ?>
-                                        </span>
-                                    </div>
-                                    
-                                    <div class="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-1 sm:space-y-0 text-sm text-gray-600">
-                                        <span>
-                                            <i class="fas fa-calendar mr-1"></i>
-                                            <?php echo date('M j, Y', strtotime($payment['payment_date'])); ?>
-                                        </span>
-                                        <?php if ($payment['project_name']): ?>
-                                            <span>
-                                                <i class="fas fa-project-diagram mr-1"></i>
-                                                <?php echo htmlspecialchars($payment['project_name']); ?>
-                                                <?php if ($payment['company_name']): ?>
-                                                    - <?php echo htmlspecialchars($payment['company_name']); ?>
-                                                <?php endif; ?>
-                                            </span>
-                                        <?php else: ?>
-                                            <span class="text-gray-400">
-                                                <i class="fas fa-briefcase mr-1"></i>
-                                                General Payment
-                                            </span>
-                                        <?php endif; ?>
-                                    </div>
-                                    
-                                    <?php if (!empty($payment['work_description'])): ?>
-                                        <p class="text-sm text-gray-500 mt-2 line-clamp-2">
-                                            <?php echo htmlspecialchars($payment['work_description']); ?>
-                                        </p>
-                                    <?php endif; ?>
+                    <!-- Mobile Filter & Sort -->
+                    <div class="mb-4 sm:mb-6">
+                        <!-- Mobile Controls -->
+                        <div class="sm:hidden">
+                            <div class="bg-gray-50 rounded-lg p-3 space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <select class="text-sm border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white" 
+                                            onchange="filterPayments(this.value)" id="statusFilter">
+                                        <option value="all">All Status</option>
+                                        <option value="paid">Paid</option>
+                                        <option value="pending">Pending</option>
+                                        <option value="cancelled">Cancelled</option>
+                                    </select>
+                                    <button onclick="toggleSortOrder()" 
+                                            class="flex items-center text-sm text-gray-600 hover:text-gray-900 transition-colors bg-white px-3 py-2 rounded-lg border border-gray-300"
+                                            id="sortButton">
+                                        <i class="fas fa-sort mr-2"></i>
+                                        <span>Amount ↓</span>
+                                    </button>
                                 </div>
                                 
-                                <div class="ml-4 text-right">
-                                    <p class="text-xs text-gray-500">
+                                <!-- Search Bar -->
+                                <div class="relative">
+                                    <input type="text" 
+                                           placeholder="Search payments..." 
+                                           class="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                           oninput="searchPayments(this.value)"
+                                           id="searchInput">
+                                    <i class="fas fa-search absolute left-3 top-2.5 text-gray-400 text-sm"></i>
+                                    <button onclick="clearSearch()" 
+                                            class="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 text-sm hidden"
+                                            id="clearSearch">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Desktop Controls -->
+                        <div class="hidden sm:flex sm:items-center sm:justify-between">
+                            <div class="flex items-center space-x-4">
+                                <div class="flex items-center space-x-2">
+                                    <label class="text-sm text-gray-700 font-medium">Filter:</label>
+                                    <select class="text-sm border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" 
+                                            onchange="filterPayments(this.value)">
+                                        <option value="all">All Status</option>
+                                        <option value="paid">Paid Only</option>
+                                        <option value="pending">Pending Only</option>
+                                        <option value="cancelled">Cancelled</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="flex items-center space-x-2">
+                                    <label class="text-sm text-gray-700 font-medium">Sort:</label>
+                                    <button onclick="toggleSortOrder()" 
+                                            class="flex items-center text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                                            id="sortButtonDesktop">
+                                        <i class="fas fa-sort mr-1"></i>
+                                        <span>Amount ↓</span>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="relative w-64">
+                                <input type="text" 
+                                       placeholder="Search payments..." 
+                                       class="w-full pl-10 pr-10 py-2 text-sm border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                       oninput="searchPayments(this.value)">
+                                <i class="fas fa-search absolute left-3 top-2.5 text-gray-400 text-sm"></i>
+                                <button onclick="clearSearch()" 
+                                        class="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 text-sm hidden"
+                                        id="clearSearchDesktop">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Results Summary -->
+                        <div class="mt-3 text-sm text-gray-600 hidden" id="searchResults">
+                            <span id="resultsCount">0</span> payment(s) found
+                        </div>
+                    </div>
+
+                    <!-- Payments Grid -->
+                    <div class="space-y-3 sm:space-y-4" id="paymentsContainer">
+                        <?php foreach ($recentPayments as $payment): ?>
+                            <div class="payment-item flex flex-col sm:flex-row sm:items-start p-3 sm:p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-transparent hover:border-gray-200"
+                                 data-status="<?php echo $payment['payment_status']; ?>">
+                                <!-- Mobile: Stacked Layout -->
+                                <div class="flex-1 min-w-0">
+                                    <!-- Payment Header -->
+                                    <div class="flex items-start justify-between mb-3 sm:mb-2">
+                                        <div class="flex flex-col sm:flex-row sm:items-center sm:space-x-3">
+                                            <h4 class="font-bold text-lg sm:text-base text-gray-900 mb-1 sm:mb-0">
+                                                <?php echo Helper::formatCurrency($payment['payment_amount']); ?>
+                                            </h4>
+                                            <div class="flex items-center space-x-2">
+                                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium <?php
+                                                    switch($payment['payment_status']) {
+                                                        case 'paid':
+                                                            echo 'bg-green-100 text-green-800 border border-green-200';
+                                                            break;
+                                                        case 'pending':
+                                                            echo 'bg-yellow-100 text-yellow-800 border border-yellow-200';
+                                                            break;
+                                                        case 'cancelled':
+                                                            echo 'bg-red-100 text-red-800 border border-red-200';
+                                                            break;
+                                                        default:
+                                                            echo 'bg-gray-100 text-gray-800 border border-gray-200';
+                                                    }
+                                                ?>">
+                                                    <i class="fas fa-circle text-xs mr-1"></i>
+                                                    <?php echo ucfirst($payment['payment_status']); ?>
+                                                </span>
+                                                <span class="hidden sm:inline-flex items-center text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                                                    <i class="fas fa-credit-card mr-1"></i>
+                                                    <?php echo ucwords(str_replace('_', ' ', $payment['payment_method'])); ?>
+                                                </span>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Mobile: Created by info -->
+                                        <div class="text-right sm:hidden">
+                                            <p class="text-xs text-gray-500">
+                                                by <?php echo htmlspecialchars($payment['created_by_name'] ?? 'System'); ?>
+                                            </p>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Payment Details -->
+                                    <div class="space-y-2">
+                                        <!-- Date and Project Info -->
+                                        <div class="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-1 sm:space-y-0 text-sm">
+                                            <span class="flex items-center text-gray-600">
+                                                <i class="fas fa-calendar w-4 h-4 mr-2 text-gray-400"></i>
+                                                <span class="font-medium"><?php echo date('M j, Y', strtotime($payment['payment_date'])); ?></span>
+                                            </span>
+                                            
+                                            <?php if ($payment['project_name']): ?>
+                                                <span class="flex items-center text-gray-600">
+                                                    <i class="fas fa-project-diagram w-4 h-4 mr-2 text-gray-400"></i>
+                                                    <span class="truncate">
+                                                        <?php echo htmlspecialchars($payment['project_name']); ?>
+                                                        <?php if ($payment['company_name']): ?>
+                                                            <span class="text-gray-500">- <?php echo htmlspecialchars($payment['company_name']); ?></span>
+                                                        <?php endif; ?>
+                                                    </span>
+                                                </span>
+                                            <?php else: ?>
+                                                <span class="flex items-center text-gray-400">
+                                                    <i class="fas fa-briefcase w-4 h-4 mr-2"></i>
+                                                    <span>General Payment</span>
+                                                </span>
+                                            <?php endif; ?>
+                                        </div>
+                                        
+                                        <!-- Mobile: Payment Method -->
+                                        <div class="flex items-center text-sm text-gray-600 sm:hidden">
+                                            <i class="fas fa-credit-card w-4 h-4 mr-2 text-gray-400"></i>
+                                            <span><?php echo ucwords(str_replace('_', ' ', $payment['payment_method'])); ?></span>
+                                        </div>
+                                        
+                                        <!-- Work Description -->
+                                        <?php if (!empty($payment['work_description'])): ?>
+                                            <div class="bg-white rounded-lg p-3 border border-gray-100">
+                                                <p class="text-sm text-gray-600 line-clamp-3 sm:line-clamp-2">
+                                                    <i class="fas fa-quote-left text-gray-300 mr-1"></i>
+                                                    <?php echo htmlspecialchars($payment['work_description']); ?>
+                                                </p>
+                                                <button onclick="toggleDescription(this)" class="text-blue-600 hover:text-blue-700 text-xs mt-1 sm:hidden">
+                                                    Show more
+                                                </button>
+                                            </div>
+                                        <?php endif; ?>
+                                        
+                                        <!-- Reference Number -->
+                                        <?php if (!empty($payment['payment_reference'])): ?>
+                                            <div class="flex items-center text-xs text-gray-500">
+                                                <i class="fas fa-hashtag w-3 h-3 mr-1"></i>
+                                                <span>Ref: <?php echo htmlspecialchars($payment['payment_reference']); ?></span>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                                
+                                <!-- Desktop: Right Column -->
+                                <div class="hidden sm:flex sm:flex-col sm:items-end sm:ml-4 sm:text-right sm:min-w-0">
+                                    <p class="text-xs text-gray-500 mb-1">
                                         by <?php echo htmlspecialchars($payment['created_by_name'] ?? 'System'); ?>
                                     </p>
-                                    <?php if (!empty($payment['payment_reference'])): ?>
-                                        <p class="text-xs text-gray-400 mt-1">
-                                            Ref: <?php echo htmlspecialchars($payment['payment_reference']); ?>
-                                        </p>
-                                    <?php endif; ?>
+                                    <p class="text-xs text-gray-400">
+                                        <?php echo date('g:i A', strtotime($payment['payment_date'])); ?>
+                                    </p>
+                                </div>
+                                
+                                <!-- Mobile: Payment Actions -->
+                                <div class="flex items-center justify-between mt-3 pt-3 border-t border-gray-200 sm:hidden">
+                                    <div class="flex items-center space-x-3 text-xs text-gray-500">
+                                        <span><?php echo date('g:i A', strtotime($payment['payment_date'])); ?></span>
+                                        <span>•</span>
+                                        <span><?php echo time_elapsed_string($payment['created_at'] ?? $payment['payment_date']); ?></span>
+                                    </div>
+                                    <button class="text-gray-400 hover:text-gray-600 transition-colors"
+                                            onclick="showPaymentDetails('<?php echo $payment['id'] ?? ''; ?>')">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
                                 </div>
                             </div>
                         <?php endforeach; ?>
                     </div>
+                    
+                    <!-- Load More Button -->
+                    <?php if (count($recentPayments) >= 10): ?>
+                        <div class="text-center mt-6">
+                            <button onclick="loadMorePayments()" 
+                                    class="inline-flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm font-medium">
+                                <i class="fas fa-plus mr-2"></i>
+                                Load More Payments
+                            </button>
+                        </div>
+                    <?php endif; ?>
                 <?php endif; ?>
             </div>
         </div>
@@ -396,14 +570,14 @@ include '../../includes/header.php';
                                     <span>
                                         Amount: 
                                         <span class="font-medium text-gray-700">
-                                            $<?php echo number_format($project['total_amount'], 2); ?>
+                                            <?php echo Helper::formatCurrency($project['total_amount']); ?>
                                         </span>
                                     </span>
                                     <?php if ($project['payment_count'] > 0): ?>
                                         <span>
                                             Earned: 
                                             <span class="font-medium text-green-600">
-                                                $<?php echo number_format($project['total_earned_from_project'], 2); ?>
+                                                <?php echo Helper::formatCurrency($project['total_earned_from_project']); ?>
                                             </span>
                                         </span>
                                     <?php endif; ?>
@@ -447,7 +621,7 @@ include '../../includes/header.php';
                         </div>
                     </div>
                     <p class="text-lg font-bold text-green-600">
-                        $<?php echo number_format($stats['total_earned'], 2); ?>
+                        <?php echo Helper::formatCurrency($stats['total_earned']); ?>
                     </p>
                 </div>
 
@@ -463,7 +637,7 @@ include '../../includes/header.php';
                         </div>
                     </div>
                     <p class="text-lg font-bold text-blue-600">
-                        $<?php echo number_format($stats['total_paid'], 2); ?>
+                        <?php echo Helper::formatCurrency($stats['total_paid']); ?>
                     </p>
                 </div>
 
@@ -480,7 +654,7 @@ include '../../includes/header.php';
                         </div>
                     </div>
                     <p class="text-lg font-bold text-yellow-600">
-                        $<?php echo number_format($stats['pending_amount'], 2); ?>
+                        <?php echo Helper::formatCurrency($stats['pending_amount']); ?>
                     </p>
                 </div>
                 <?php endif; ?>
@@ -536,7 +710,7 @@ include '../../includes/header.php';
             <h3 class="text-lg font-bold text-gray-900 mb-4">Quick Actions</h3>
             
             <div class="space-y-3">
-                <a href="<?php echo Helper::baseUrl('modules/employee_payments/add.php?employee_id=' . Helper::encryptId($employee['id'])); ?>" 
+                <a href="<?php echo Helper::baseUrl('modules/employees/add.php?employee_id=' . Helper::encryptId($employee['id'])); ?>" 
                    class="flex items-center justify-between w-full p-3 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors group">
                     <div class="flex items-center space-x-3">
                         <div class="w-8 h-8 bg-blue-100 group-hover:bg-blue-200 rounded-lg flex items-center justify-center transition-colors">
@@ -644,11 +818,23 @@ include '../../includes/header.php';
 
 <!-- Additional Mobile-Optimized Styles -->
 <style>
+/* Mobile-first responsive design */
 @media (max-width: 768px) {
     .line-clamp-2 {
         display: -webkit-box;
         -webkit-box-orient: vertical;
         overflow: hidden;
+    }
+    
+    .line-clamp-3 {
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    
+    .line-clamp-none {
+        display: block;
+        overflow: visible;
     }
     
     .grid-cols-1 {
@@ -662,6 +848,10 @@ include '../../includes/header.php';
     /* Ensure proper spacing on mobile */
     .space-y-6 > * + * {
         margin-top: 1.5rem;
+    }
+    
+    .space-y-3 > * + * {
+        margin-top: 0.75rem;
     }
     
     /* Mobile-friendly button sizes */
@@ -679,68 +869,266 @@ include '../../includes/header.php';
         font-size: 1.25rem;
         line-height: 1.75rem;
     }
+    
+    /* Payment card mobile optimizations */
+    .payment-item {
+        border: 1px solid transparent;
+        transition: all 0.2s ease-in-out;
+    }
+    
+    .payment-item:hover {
+        border-color: #e5e7eb;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Mobile payment card layout */
+    .payment-item .truncate {
+        max-width: 200px;
+    }
+    
+    /* Mobile filter controls */
+    .mobile-filter-controls {
+        background: linear-gradient(to right, #f9fafb, #f3f4f6);
+        border-radius: 0.5rem;
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+    }
+    
+    /* Swipe indicator */
+    .swipe-indicator {
+        position: relative;
+    }
+    
+    .swipe-indicator::after {
+        content: '';
+        position: absolute;
+        right: -8px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 4px;
+        height: 20px;
+        background: linear-gradient(to bottom, transparent, #3b82f6, transparent);
+        border-radius: 2px;
+        opacity: 0.3;
+    }
 }
 
-/* Custom animations for better UX */
-.transition-colors {
-    transition-property: color, background-color, border-color;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    transition-duration: 200ms;
+/* Tablet optimizations */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .payment-item {
+        padding: 1rem;
+    }
+    
+    .lg\:col-span-2 {
+        grid-column: span 2 / span 2;
+    }
+    
+    /* Tablet-specific adjustments */
+    .grid-cols-1.lg\\:grid-cols-3 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
 
-.group:hover .group-hover\:bg-blue-200 {
-    background-color: rgb(191 219 254);
+/* Animation enhancements */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-.group:hover .group-hover\:bg-green-200 {
-    background-color: rgb(187 247 208);
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
-.group:hover .group-hover\:bg-purple-200 {
-    background-color: rgb(221 214 254);
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
-.group:hover .group-hover\:bg-gray-200 {
-    background-color: rgb(229 231 235);
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
 }
 
-.group:hover .group-hover\:text-blue-600 {
-    color: rgb(37 99 235);
+.fade-in {
+    animation: fadeIn 0.3s ease-in-out;
 }
 
-.group:hover .group-hover\:text-green-600 {
-    color: rgb(22 163 74);
+.slide-in-left {
+    animation: slideInLeft 0.3s ease-in-out;
 }
 
-.group:hover .group-hover\:text-purple-600 {
-    color: rgb(147 51 234);
+.slide-in-right {
+    animation: slideInRight 0.3s ease-in-out;
 }
 
-.group:hover .group-hover\:text-gray-600 {
-    color: rgb(75 85 99);
+.pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-/* Loading states for better UX */
+/* Enhanced status badges */
+.status-badge {
+    position: relative;
+    overflow: hidden;
+}
+
+.status-badge::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.2),
+        transparent
+    );
+    transition: left 0.5s;
+}
+
+.status-badge:hover::before {
+    left: 100%;
+}
+
+/* Payment amount emphasis */
+.payment-amount {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+}
+
+/* Enhanced loading states */
 .loading {
     opacity: 0.7;
     pointer-events: none;
+    position: relative;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: inherit;
 }
 
 /* Focus states for accessibility */
 a:focus,
-button:focus {
-    outline: 2px solid rgb(59 130 246);
+button:focus,
+select:focus,
+.payment-item:focus {
+    outline: 2px solid #3b82f6;
     outline-offset: 2px;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-/* Print styles */
+/* Enhanced hover effects */
+.hover-lift {
+    transition: all 0.2s ease-in-out;
+}
+
+.hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* Improved button styles */
+.btn-primary {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.39);
+    transition: all 0.2s ease-in-out;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+    box-shadow: 0 6px 20px 0 rgba(59, 130, 246, 0.5);
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+    box-shadow: 0 4px 14px 0 rgba(107, 114, 128, 0.39);
+    transition: all 0.2s ease-in-out;
+}
+
+.btn-secondary:hover {
+    background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+    box-shadow: 0 6px 20px 0 rgba(107, 114, 128, 0.5);
+    transform: translateY(-1px);
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .payment-item {
+        border: 2px solid;
+    }
+    
+    .status-badge {
+        border: 1px solid;
+        font-weight: bold;
+    }
+    
+    .btn-primary,
+    .btn-secondary {
+        border: 2px solid;
+        font-weight: bold;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* Print optimizations */
 @media print {
-    .no-print {
+    .no-print,
+    .mobile-filter-controls,
+    button,
+    .btn-primary,
+    .btn-secondary {
         display: none !important;
     }
     
     body {
         background: white !important;
+        color: black !important;
     }
     
     .bg-white,
@@ -757,6 +1145,122 @@ button:focus {
     .text-white {
         color: black !important;
     }
+    
+    .payment-item {
+        break-inside: avoid;
+        margin-bottom: 1rem;
+    }
+    
+    .text-blue-600,
+    .text-green-600,
+    .text-purple-600,
+    .text-yellow-600,
+    .text-red-600 {
+        color: black !important;
+        font-weight: bold;
+    }
+}
+
+/* Performance optimizations */
+.will-change-transform {
+    will-change: transform;
+}
+
+.gpu-accelerated {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+}
+
+/* Custom scrollbar for webkit browsers */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Toast notification styles */
+.toast {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    background: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    padding: 1rem;
+    z-index: 1000;
+    opacity: 0;
+    transform: translateX(100%);
+    transition: all 0.3s ease-in-out;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.toast.success {
+    border-left: 4px solid #10b981;
+}
+
+.toast.error {
+    border-left: 4px solid #ef4444;
+}
+
+.toast.warning {
+    border-left: 4px solid #f59e0b;
+}
+
+.toast.info {
+    border-left: 4px solid #3b82f6;
+}
+
+/* Skeleton loading animation */
+.skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 37%, #f0f0f0 63%);
+    background-size: 400% 100%;
+    animation: skeleton-loading 1.4s ease infinite;
+}
+
+@keyframes skeleton-loading {
+    0% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* Improved focus ring */
+.focus-ring:focus {
+    outline: none;
+    box-shadow: 
+        0 0 0 2px white,
+        0 0 0 4px #3b82f6,
+        0 0 0 6px rgba(59, 130, 246, 0.2);
+}
+
+/* Enhanced text selection */
+::selection {
+    background-color: #3b82f6;
+    color: white;
+}
+
+::-moz-selection {
+    background-color: #3b82f6;
+    color: white;
 }
 </style>
 
@@ -774,6 +1278,111 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    // Payment filtering functionality
+    window.filterPayments = function(status) {
+        const payments = document.querySelectorAll('.payment-item');
+        let visibleCount = 0;
+        
+        payments.forEach(payment => {
+            const matchesStatus = status === 'all' || payment.dataset.status === status;
+            const searchTerm = document.querySelector('#searchInput')?.value.toLowerCase() || 
+                              document.querySelector('input[placeholder="Search payments..."]')?.value.toLowerCase() || '';
+            const matchesSearch = !searchTerm || payment.textContent.toLowerCase().includes(searchTerm);
+            
+            if (matchesStatus && matchesSearch) {
+                payment.style.display = 'flex';
+                payment.classList.add('fade-in');
+                visibleCount++;
+            } else {
+                payment.style.display = 'none';
+                payment.classList.remove('fade-in');
+            }
+        });
+        
+        updateResultsCount(visibleCount);
+    };
+
+    // Sort functionality
+    let sortAscending = false; // Start with descending (highest first)
+    window.toggleSortOrder = function() {
+        const container = document.getElementById('paymentsContainer');
+        const payments = Array.from(container.querySelectorAll('.payment-item'));
+        
+        payments.sort((a, b) => {
+            const amountA = parseFloat(a.querySelector('h4').textContent.replace(/[^\d.-]/g, ''));
+            const amountB = parseFloat(b.querySelector('h4').textContent.replace(/[^\d.-]/g, ''));
+            return sortAscending ? amountA - amountB : amountB - amountA;
+        });
+        
+        sortAscending = !sortAscending;
+        
+        // Clear container and re-append sorted items with animation
+        container.innerHTML = '';
+        payments.forEach((payment, index) => {
+            setTimeout(() => {
+                payment.classList.add('slide-in-left');
+                container.appendChild(payment);
+            }, index * 50); // Staggered animation
+        });
+        
+        // Update sort button text
+        const sortButtons = document.querySelectorAll('#sortButton, #sortButtonDesktop');
+        sortButtons.forEach(button => {
+            const span = button.querySelector('span');
+            if (span) {
+                span.textContent = `Amount ${sortAscending ? '↑' : '↓'}`;
+            }
+        });
+    };
+
+    // Toggle work description
+    window.toggleDescription = function(button) {
+        const description = button.previousElementSibling;
+        const isExpanded = description.classList.contains('line-clamp-3');
+        
+        if (isExpanded) {
+            description.classList.remove('line-clamp-3');
+            description.classList.add('line-clamp-none');
+            button.textContent = 'Show less';
+        } else {
+            description.classList.add('line-clamp-3');
+            description.classList.remove('line-clamp-none');
+            button.textContent = 'Show more';
+        }
+    };
+
+    // Show payment details (could open modal or redirect)
+    window.showPaymentDetails = function(paymentId) {
+        if (paymentId) {
+            // You can implement a modal or redirect to payment details
+            console.log('Showing details for payment:', paymentId);
+            // Example: window.location.href = `payment_details.php?id=${paymentId}`;
+        }
+    };
+
+    // Load more payments functionality
+    window.loadMorePayments = function() {
+        const button = event.target;
+        const originalText = button.innerHTML;
+        
+        // Show loading state
+        button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Loading...';
+        button.disabled = true;
+        
+        // Simulate API call (replace with actual AJAX call)
+        setTimeout(() => {
+            // Here you would typically fetch more payments via AJAX
+            // For now, just hide the button
+            button.style.display = 'none';
+            
+            // Show success message
+            const message = document.createElement('div');
+            message.className = 'text-center text-sm text-gray-500 mt-4';
+            message.textContent = 'All payments loaded';
+            button.parentNode.appendChild(message);
+        }, 1000);
+    };
 
     // Auto-refresh stats (optional - for real-time updates)
     let autoRefreshEnabled = false;
@@ -831,6 +1440,54 @@ document.addEventListener('DOMContentLoaded', function() {
 
     handleMobileInteractions();
 
+    // Swipe gesture support for mobile payment cards
+    function addSwipeSupport() {
+        const paymentItems = document.querySelectorAll('.payment-item');
+        
+        paymentItems.forEach(item => {
+            let startX = 0;
+            let currentX = 0;
+            let isDragging = false;
+            
+            item.addEventListener('touchstart', (e) => {
+                startX = e.touches[0].clientX;
+                isDragging = true;
+                item.style.transition = 'none';
+            });
+            
+            item.addEventListener('touchmove', (e) => {
+                if (!isDragging) return;
+                currentX = e.touches[0].clientX;
+                const deltaX = currentX - startX;
+                
+                // Limit swipe distance
+                const maxSwipe = 100;
+                const clampedDelta = Math.max(-maxSwipe, Math.min(maxSwipe, deltaX));
+                item.style.transform = `translateX(${clampedDelta}px)`;
+            });
+            
+            item.addEventListener('touchend', () => {
+                if (!isDragging) return;
+                isDragging = false;
+                
+                const deltaX = currentX - startX;
+                item.style.transition = 'transform 0.3s ease';
+                
+                if (Math.abs(deltaX) > 50) {
+                    // Show action buttons or trigger action
+                    console.log('Swipe action triggered');
+                }
+                
+                // Reset position
+                item.style.transform = 'translateX(0)';
+                startX = 0;
+                currentX = 0;
+            });
+        });
+    }
+    
+    addSwipeSupport();
+
     // Performance monitoring
     if ('performance' in window) {
         window.addEventListener('load', function() {
@@ -864,6 +1521,36 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     handleConnectionStatus();
+
+    // Enhanced payment card interactions
+    function enhancePaymentCards() {
+        const paymentCards = document.querySelectorAll('.payment-item');
+        
+        paymentCards.forEach(card => {
+            // Add keyboard navigation
+            card.setAttribute('tabindex', '0');
+            
+            card.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    const button = card.querySelector('[onclick*="showPaymentDetails"]');
+                    if (button) button.click();
+                }
+            });
+            
+            // Add focus indicators
+            card.addEventListener('focus', () => {
+                card.style.outline = '2px solid #3B82F6';
+                card.style.outlineOffset = '2px';
+            });
+            
+            card.addEventListener('blur', () => {
+                card.style.outline = 'none';
+            });
+        });
+    }
+    
+    enhancePaymentCards();
 });
 
 // Utility functions
@@ -880,6 +1567,53 @@ function formatDate(dateString) {
         year: 'numeric',
         month: 'short',
         day: 'numeric'
+    });
+}
+
+// Search functionality for payments
+function searchPayments(query) {
+    const payments = document.querySelectorAll('.payment-item');
+    const searchTerm = query.toLowerCase();
+    
+    payments.forEach(payment => {
+        const text = payment.textContent.toLowerCase();
+        if (text.includes(searchTerm)) {
+            payment.style.display = 'flex';
+            // Highlight matching text
+            highlightText(payment, query);
+        } else {
+            payment.style.display = 'none';
+        }
+    });
+}
+
+function highlightText(element, query) {
+    if (!query) return;
+    
+    const walker = document.createTreeWalker(
+        element,
+        NodeFilter.SHOW_TEXT,
+        null,
+        false
+    );
+    
+    const textNodes = [];
+    let node;
+    
+    while (node = walker.nextNode()) {
+        textNodes.push(node);
+    }
+    
+    textNodes.forEach(textNode => {
+        const text = textNode.textContent;
+        const regex = new RegExp(`(${query})`, 'gi');
+        
+        if (regex.test(text)) {
+            const highlightedText = text.replace(regex, '<mark class="bg-yellow-200">$1</mark>');
+            const span = document.createElement('span');
+            span.innerHTML = highlightedText;
+            textNode.parentNode.replaceChild(span, textNode);
+        }
     });
 }
 </script>

@@ -225,6 +225,35 @@ CREATE INDEX idx_invoices_status ON invoices(status);
 CREATE INDEX idx_payments_invoice ON payments(invoice_id);
 CREATE INDEX idx_payments_date ON payments(payment_date);
 
+-- Employee Payments table
+CREATE TABLE employee_payments (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    employee_id INT NOT NULL,
+    project_id INT NULL, -- Optional: Some payments may not be project-related
+    payment_amount DECIMAL(10, 2) NOT NULL,
+    payment_date DATE NOT NULL,
+    payment_method ENUM('cash', 'bank_transfer', 'check', 'card', 'online', 'other') NOT NULL DEFAULT 'cash',
+    payment_reference VARCHAR(100), -- Bank reference, check number, etc.
+    description TEXT, -- Auto-generated or manual description
+    work_description TEXT, -- What work was done for this payment
+    payment_status ENUM('pending', 'paid', 'cancelled') NOT NULL DEFAULT 'paid',
+    notes TEXT, -- Additional notes
+    created_by INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (employee_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL,
+    FOREIGN KEY (created_by) REFERENCES users(id)
+);
+
+-- Create indexes for better performance
+CREATE INDEX idx_employee_payments_employee ON employee_payments(employee_id);
+CREATE INDEX idx_employee_payments_project ON employee_payments(project_id);
+CREATE INDEX idx_employee_payments_date ON employee_payments(payment_date);
+CREATE INDEX idx_employee_payments_status ON employee_payments(payment_status);
+CREATE INDEX idx_employee_payments_method ON employee_payments(payment_method);
+
 -- Create triggers to update project total amount when items change
 DELIMITER //
 CREATE TRIGGER update_project_total_after_insert
